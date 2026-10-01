@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Native launch screen (Android 11 and below), shown until Flutter draws
+     its first frame. Same paper colour and logo as the in-app splash art
+     (assets/images/splash_art.png), so the hand-off does not flash. -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:drawable="@color/splash_background" />
+    <item>
+        <bitmap
+            android:gravity="center"
+            android:src="@drawable/splash_logo" />
+    </item>
+</layer-list>

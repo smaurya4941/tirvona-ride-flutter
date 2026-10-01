@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "232407029736",
+    "project_id": "tirvona-ride",
+    "storage_bucket": "tirvona-ride.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:232407029736:android:04872f4d8adee5b6e5765d",
+        "android_client_info": {
+          "package_name": "com.tirvona.ride"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCf9eMEAv9Gu71JnxtM4xmKpeWedzqy93w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

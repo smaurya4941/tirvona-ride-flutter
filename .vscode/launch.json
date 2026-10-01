@@ -1,0 +1,18 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Tirvona Ride (Physical Device / Wi-Fi)",
+      "request": "launch",
+      "type": "dart",
+      "args": [
+        "--dart-define-from-file=env/local.json"
+      ]
+    },
+    {
+      "name": "Tirvona Ride (Emulator)",
+      "request": "launch",
+      "type": "dart"
+    }
+  ]
+}

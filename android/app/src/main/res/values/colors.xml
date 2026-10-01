@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Paper colour of the splash artwork. -->
+    <color name="splash_background">#FFFFFF</color>
+    <!-- Adaptive launcher icon background and notification accent. -->
+    <color name="ic_launcher_background">#FFFFFF</color>
+    <color name="notification_accent">#E67E22</color>
+</resources>
