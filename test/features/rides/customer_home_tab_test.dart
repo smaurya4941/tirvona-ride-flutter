@@ -16,7 +16,9 @@ import 'package:tirvona_ride/features/places/domain/saved_place.dart';
 import 'package:tirvona_ride/features/rides/application/booking_controller.dart';
 import 'package:tirvona_ride/features/rides/data/ride_repository.dart';
 import 'package:tirvona_ride/features/rides/domain/nearby_driver.dart';
+import 'package:tirvona_ride/features/rides/domain/promo_models.dart';
 import 'package:tirvona_ride/features/rides/presentation/customer/customer_home_tab.dart';
+import 'package:tirvona_ride/features/rides/presentation/customer/promo_code_sheet.dart';
 
 import '../places/places_fakes.dart';
 
@@ -60,6 +62,8 @@ void main() {
   Future<ProviderContainer> pumpHome(
     WidgetTester tester, {
     int unread = 0,
+    VoidCallback? onOpenDrawer,
+    List<PromoOffer>? promoOffers,
   }) async {
     // Placeholder instead of the native Google map in widget tests.
     debugDefaultTargetPlatformOverride = TargetPlatform.iOS;
@@ -82,6 +86,8 @@ void main() {
         sessionControllerProvider.overrideWith(FakeSession.new),
         rideRepositoryProvider.overrideWithValue(rides),
         unreadCountProvider.overrideWith(() => _FixedUnread(unread)),
+        if (promoOffers != null)
+          promoOffersProvider.overrideWith((ref) => promoOffers),
       ],
     );
 
@@ -89,7 +95,9 @@ void main() {
       routes: [
         GoRoute(
           path: '/',
-          builder: (context, state) => const CustomerHomeTab(),
+          builder: (context, state) => CustomerHomeTab(
+            onOpenDrawer: onOpenDrawer,
+          ),
         ),
         GoRoute(
           path: AppRoutes.customerPlaceSearch,
@@ -141,10 +149,11 @@ void main() {
     expect(find.text('Work'), findsOneWidget);
     expect(find.text('Add'), findsNWidgets(2));
     expect(find.text('Recent'), findsOneWidget);
-    // Popular destinations come from the API (with the admin's photo).
+    // Popular destinations: destination name and location only, no image.
     expect(find.text('Popular destinations'), findsOneWidget);
     expect(find.text('Noida City Centre'), findsOneWidget);
-    final photo = tester.widget<Image>(
+    expect(find.text('Sector 32, Noida'), findsOneWidget);
+    expect(
       find.descendant(
         of: find.ancestor(
           of: find.text('Noida City Centre'),
@@ -152,12 +161,11 @@ void main() {
         ),
         matching: find.byType(Image),
       ),
+      findsNothing,
     );
-    expect(
-      (photo.image as NetworkImage).url,
-      'http://127.0.0.1:1/api/v1${_noidaCentre.imagePath}',
-    );
-    expect(find.text('Ride Anywhere\nWith Tirvona'), findsOneWidget);
+    expect(find.text('Ride Anywhere\nWith Tirvona'), findsNothing);
+    expect(find.text('Ride More. Save More.'), findsOneWidget);
+    expect(find.text('RIDE50'), findsOneWidget);
     // No unread notifications: no badge (the old screen always showed "1").
     expect(find.byTooltip('Notifications'), findsOneWidget);
     // Cars around the pickup are asked for on a ~100 m grid.
@@ -240,6 +248,53 @@ void main() {
     await pumpHome(tester);
     expect(find.text('Popular destinations'), findsNothing);
     expect(find.text('Where to?'), findsOneWidget);
+    await done(tester);
+  });
+
+  testWidgets('hamburger menu button opens the sidebar drawer', (
+    tester,
+  ) async {
+    var drawerOpened = false;
+    await pumpHome(tester, onOpenDrawer: () => drawerOpened = true);
+
+    expect(find.byTooltip('Menu'), findsOneWidget);
+    await tester.tap(find.byTooltip('Menu'));
+    await tester.pumpAndSettle();
+
+    expect(drawerOpened, isTrue);
+    await done(tester);
+  });
+
+  testWidgets('multiple promos display with alternating colors and swipeable pages', (
+    tester,
+  ) async {
+    final offer1 = PromoOffer(
+      code: 'OFFER1',
+      title: 'First Special Offer',
+      discountType: 'FLAT',
+      discountValue: 40,
+      endsAt: DateTime.now().add(const Duration(days: 10)),
+    );
+    final offer2 = PromoOffer(
+      code: 'OFFER2',
+      title: 'Second Sapphire Deal',
+      discountType: 'PERCENTAGE',
+      discountValue: 20,
+      endsAt: DateTime.now().add(const Duration(days: 10)),
+    );
+
+    await pumpHome(tester, promoOffers: [offer1, offer2]);
+
+    expect(find.text('OFFER1'), findsOneWidget);
+    expect(find.text('First Special Offer'), findsOneWidget);
+
+    // Swipe to next promo
+    await tester.drag(find.text('First Special Offer'), const Offset(-400, 0));
+    await tester.pumpAndSettle();
+
+    expect(find.text('OFFER2'), findsOneWidget);
+    expect(find.text('Second Sapphire Deal'), findsOneWidget);
+
     await done(tester);
   });
 }

@@ -184,41 +184,40 @@ class _CustomerShellState extends ConsumerState<CustomerShell> {
         ],
       ),
       bottomNavigationBar: Container(
-        decoration: BoxDecoration(
+        decoration: const BoxDecoration(
           color: Colors.white,
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.06),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
-            ),
-          ],
+          border: Border(
+            top: BorderSide(color: Color(0xFFF1F5F9), width: 1),
+          ),
         ),
         child: NavigationBar(
           backgroundColor: Colors.white,
           elevation: 0,
-          indicatorColor: const Color(0xFFDBEAFE),
+          height: 64,
+          indicatorColor: AppColors.bhagwaLight,
           selectedIndex: _index,
           onDestinationSelected: (index) => setState(() => _index = index),
           destinations: const [
             NavigationDestination(
               icon: Icon(Icons.home_outlined),
-              selectedIcon: Icon(Icons.home_rounded, color: Color(0xFF2563EB)),
+              selectedIcon: Icon(Icons.home_rounded, color: AppColors.bhagwa),
               label: 'Home',
             ),
             NavigationDestination(
               icon: Icon(Icons.access_time_rounded),
-              selectedIcon: Icon(Icons.access_time_filled_rounded, color: Color(0xFF2563EB)),
+              selectedIcon:
+                  Icon(Icons.access_time_filled_rounded, color: AppColors.bhagwa),
               label: 'Rides',
             ),
             NavigationDestination(
               icon: Icon(Icons.local_offer_outlined),
-              selectedIcon: Icon(Icons.local_offer_rounded, color: Color(0xFF2563EB)),
+              selectedIcon:
+                  Icon(Icons.local_offer_rounded, color: AppColors.bhagwa),
               label: 'Offers',
             ),
             NavigationDestination(
               icon: Icon(Icons.person_outline_rounded),
-              selectedIcon: Icon(Icons.person_rounded, color: Color(0xFF2563EB)),
+              selectedIcon: Icon(Icons.person_rounded, color: AppColors.bhagwa),
               label: 'Profile',
             ),
           ],

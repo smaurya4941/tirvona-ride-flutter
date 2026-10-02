@@ -345,7 +345,7 @@ class _LocationSearchScreenState extends ConsumerState<LocationSearchScreen> {
         bottom: showProgress
             ? const PreferredSize(
                 preferredSize: Size.fromHeight(2),
-                child: const LinearProgressIndicator(
+                child: LinearProgressIndicator(
                   minHeight: 2,
                   color: AppColors.bhagwa,
                   backgroundColor: AppColors.bhagwaLight,
