@@ -98,18 +98,36 @@ class RideStatusChip extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = _statusColors(status);
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
       decoration: BoxDecoration(
         color: colors.background,
         borderRadius: BorderRadius.circular(20),
-      ),
-      child: Text(
-        status.label,
-        style: TextStyle(
-          color: colors.foreground,
-          fontWeight: FontWeight.w600,
-          fontSize: 12,
+        border: Border.all(
+          color: colors.foreground.withValues(alpha: 0.18),
         ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: colors.foreground,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 5),
+          Text(
+            status.label,
+            style: TextStyle(
+              color: colors.foreground,
+              fontWeight: FontWeight.w700,
+              fontSize: 11.5,
+              letterSpacing: -0.1,
+            ),
+          ),
+        ],
       ),
     );
   }

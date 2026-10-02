@@ -65,8 +65,30 @@ class _CustomerShellState extends ConsumerState<CustomerShell> {
       appBar: _index == 0
           ? null
           : AppBar(
-              title: Text(_titles[_index]),
-              actions: const [NotificationBell(isDriver: false)],
+              backgroundColor: Colors.white,
+              elevation: 0,
+              centerTitle: false,
+              bottom: const PreferredSize(
+                preferredSize: Size.fromHeight(1),
+                child: Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: Color(0xFFF1F5F9),
+                ),
+              ),
+              title: Text(
+                _titles[_index],
+                style: const TextStyle(
+                  color: AppColors.midnightBlue,
+                  fontWeight: FontWeight.w800,
+                  fontSize: 18.5,
+                  letterSpacing: -0.3,
+                ),
+              ),
+              actions: const [
+                NotificationBell(isDriver: false),
+                SizedBox(width: 8),
+              ],
             ),
       drawer: Drawer(
         child: ListView(

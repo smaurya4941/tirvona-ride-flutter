@@ -11,6 +11,10 @@ import '../domain/ride_history_filter.dart';
 import '../domain/ride_models.dart';
 import 'widgets/ride_widgets.dart';
 
+const _ink = AppColors.midnightBlue;
+const _muted = Color(0xFF64748B);
+const _line = Color(0xFFE2E8F0);
+
 /// Paginated ride history for customers and drivers (`GET /rides` returns
 /// the right set for the caller's role), filtered by date. Pages load as the
 /// list nears its end. [rideRoute] maps a ride to the screen that shows it.
@@ -149,16 +153,19 @@ class _RideHistoryTabState extends ConsumerState<RideHistoryTab> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        _FilterBar(
-          filter: _filter,
-          total: _page == 0 ? null : _total,
-          shown: _rides.length,
-          onSelected: _selectPeriod,
-        ),
-        Expanded(child: _buildList()),
-      ],
+    return Container(
+      color: const Color(0xFFF8FAFC),
+      child: Column(
+        children: [
+          _FilterBar(
+            filter: _filter,
+            total: _page == 0 ? null : _total,
+            shown: _rides.length,
+            onSelected: _selectPeriod,
+          ),
+          Expanded(child: _buildList()),
+        ],
+      ),
     );
   }
 
@@ -168,28 +175,81 @@ class _RideHistoryTabState extends ConsumerState<RideHistoryTab> {
         return LoadErrorView(error: _error!, onRetry: _refresh);
       }
       if (_loading || _hasMore) {
-        return const Center(child: CircularProgressIndicator());
+        return const Center(
+          child: CircularProgressIndicator(color: AppColors.bhagwa),
+        );
       }
       return RefreshIndicator(
         onRefresh: _refresh,
+        color: AppColors.bhagwa,
         child: ListView(
           controller: _scroll,
           physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 36),
           children: [
-            const SizedBox(height: 120),
-            const Icon(
-              Icons.history,
-              size: 48,
-              color: AppColors.onSurfaceVariant,
+            const SizedBox(height: 56),
+            Center(
+              child: Container(
+                width: 84,
+                height: 84,
+                decoration: BoxDecoration(
+                  color: AppColors.bhagwaLight.withValues(alpha: 0.6),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.bhagwa.withValues(alpha: 0.25),
+                    width: 2,
+                  ),
+                ),
+                child: const Icon(
+                  Icons.route_rounded,
+                  size: 40,
+                  color: AppColors.bhagwaDark,
+                ),
+              ),
             ),
-            const SizedBox(height: 12),
-            Text(_filter.emptyMessage, textAlign: TextAlign.center),
+            const SizedBox(height: 20),
+            Text(
+              _filter.emptyMessage,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: _ink,
+                letterSpacing: -0.3,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24),
+              child: Text(
+                'Your past trips, fare receipts, and ride summaries will be catalogued here.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: _muted,
+                  height: 1.4,
+                ),
+              ),
+            ),
             if (_filter.period != RideHistoryPeriod.all) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: 24),
               Center(
-                child: TextButton(
+                child: ElevatedButton.icon(
                   onPressed: () => _selectPeriod(RideHistoryPeriod.all),
-                  child: const Text('Show all rides'),
+                  icon: const Icon(Icons.refresh_rounded, size: 16),
+                  label: const Text('Show all rides'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _ink,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -200,12 +260,15 @@ class _RideHistoryTabState extends ConsumerState<RideHistoryTab> {
 
     return RefreshIndicator(
       onRefresh: _refresh,
+      color: AppColors.bhagwa,
       child: ListView.separated(
         controller: _scroll,
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(16),
+        physics: const AlwaysScrollableScrollPhysics(
+          parent: BouncingScrollPhysics(),
+        ),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
         itemCount: _rides.length + 1,
-        separatorBuilder: (_, _) => const SizedBox(height: 10),
+        separatorBuilder: (_, _) => const SizedBox(height: 12),
         itemBuilder: (context, index) {
           if (index == _rides.length) return _buildFooter();
           final ride = _rides[index];
@@ -223,23 +286,62 @@ class _RideHistoryTabState extends ConsumerState<RideHistoryTab> {
 
   Widget _buildFooter() {
     if (_error != null) {
-      return TextButton(
-        onPressed: _loadMore,
-        child: const Text('Could not load more — tap to retry'),
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Center(
+          child: TextButton.icon(
+            onPressed: _loadMore,
+            icon: const Icon(Icons.refresh_rounded, size: 16),
+            label: const Text('Could not load more — tap to retry'),
+            style: TextButton.styleFrom(foregroundColor: AppColors.bhagwa),
+          ),
+        ),
       );
     }
     if (_hasMore) {
       return const Padding(
-        padding: EdgeInsets.all(16),
-        child: Center(child: CircularProgressIndicator()),
+        padding: EdgeInsets.symmetric(vertical: 20),
+        child: Center(
+          child: SizedBox.square(
+            dimension: 24,
+            child: CircularProgressIndicator(
+              strokeWidth: 2.5,
+              color: AppColors.bhagwa,
+            ),
+          ),
+        ),
       );
     }
-    return const Padding(
-      padding: EdgeInsets.symmetric(vertical: 16),
-      child: Text(
-        "That's all your rides for this period",
-        textAlign: TextAlign.center,
-        style: TextStyle(color: AppColors.onSurfaceVariant, fontSize: 12),
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 20),
+      child: Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF1F5F9),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: _line),
+          ),
+          child: const Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.check_circle_outline_rounded,
+                size: 14,
+                color: _muted,
+              ),
+              SizedBox(width: 6),
+              Text(
+                "That's all your rides for this period",
+                style: TextStyle(
+                  color: _muted,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -265,76 +367,162 @@ class _FilterBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final total = this.total;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const Text(
-                'Filter by:',
-                style: TextStyle(fontWeight: FontWeight.w600),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: InputDecorator(
-                  decoration: const InputDecoration(
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12),
-                    border: OutlineInputBorder(),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _line),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF0F172A).withValues(alpha: 0.03),
+              blurRadius: 10,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 34,
+                  height: 34,
+                  decoration: BoxDecoration(
+                    color: AppColors.bhagwaLight,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: AppColors.bhagwa.withValues(alpha: 0.2),
+                    ),
                   ),
-                  // A plain DropdownButton shows exactly [filter.period];
-                  // a cancelled date picker therefore leaves it unchanged.
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<RideHistoryPeriod>(
-                      key: const ValueKey('ride-history-filter'),
-                      value: filter.period,
-                      isExpanded: true,
-                      items: [
-                        for (final period in RideHistoryPeriod.values)
-                          DropdownMenuItem(
-                            value: period,
-                            child: Text(period.label),
-                          ),
-                      ],
-                      selectedItemBuilder: (context) => [
-                        for (final period in RideHistoryPeriod.values)
-                          Align(
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                              period == filter.period
-                                  ? filter.label
-                                  : period.label,
-                              overflow: TextOverflow.ellipsis,
+                  child: const Icon(
+                    Icons.tune_rounded,
+                    color: AppColors.bhagwa,
+                    size: 17,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                const Text(
+                  'Filter by:',
+                  style: TextStyle(
+                    fontSize: 13.5,
+                    fontWeight: FontWeight.w700,
+                    color: _ink,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Container(
+                    height: 38,
+                    padding: const EdgeInsets.symmetric(horizontal: 10),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF8FAFC),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: _line),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<RideHistoryPeriod>(
+                        key: const ValueKey('ride-history-filter'),
+                        value: filter.period,
+                        isExpanded: true,
+                        icon: const Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          color: _ink,
+                          size: 20,
+                        ),
+                        dropdownColor: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: _ink,
+                        ),
+                        items: [
+                          for (final period in RideHistoryPeriod.values)
+                            DropdownMenuItem(
+                              value: period,
+                              child: Text(period.label),
                             ),
-                          ),
-                      ],
-                      onChanged: (period) {
-                        if (period != null) onSelected(period);
-                      },
+                        ],
+                        selectedItemBuilder: (context) => [
+                          for (final period in RideHistoryPeriod.values)
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: Text(
+                                period == filter.period
+                                    ? filter.label
+                                    : period.label,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: _ink,
+                                ),
+                              ),
+                            ),
+                        ],
+                        onChanged: (period) {
+                          if (period != null) onSelected(period);
+                        },
+                      ),
                     ),
                   ),
                 ),
+              ],
+            ),
+            if (total != null && total > 0) ...[
+              const SizedBox(height: 10),
+              Padding(
+                padding: const EdgeInsets.only(left: 4),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 6,
+                      height: 6,
+                      decoration: const BoxDecoration(
+                        color: AppColors.bhagwa,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      shown < total
+                          ? 'Showing $shown of $total rides'
+                          : total == 1
+                              ? '1 ride'
+                              : '$total rides',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: _muted,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
-          ),
-          if (total != null && total > 0) ...[
-            const SizedBox(height: 8),
-            Text(
-              shown < total
-                  ? 'Showing $shown of $total rides'
-                  : total == 1
-                  ? '1 ride'
-                  : '$total rides',
-              style: const TextStyle(
-                fontSize: 12,
-                color: AppColors.onSurfaceVariant,
-              ),
-            ),
           ],
-        ],
+        ),
       ),
     );
   }
+}
+
+(Color bg, Color fg) _vehicleBadgeColors(RideTypeCode type) {
+  final code = type.wireName;
+  if (code.contains('BIKE')) {
+    return (const Color(0xFFFFFBEB), const Color(0xFFD97706));
+  }
+  if (code.contains('AUTO') || code.contains('RICKSHAW')) {
+    return (const Color(0xFFECFDF5), const Color(0xFF059669));
+  }
+  if (code.contains('PREMIUM') || code.contains('XL')) {
+    return (const Color(0xFFFAF5FF), const Color(0xFF7C3AED));
+  }
+  return (const Color(0xFFEFF6FF), const Color(0xFF2563EB));
 }
 
 class _HistoryCard extends StatelessWidget {
@@ -345,67 +533,252 @@ class _HistoryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      margin: EdgeInsets.zero,
-      child: InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap: onTap,
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(rideTypeIcon(ride.rideType), color: AppColors.bhagwa),
-                  const SizedBox(width: 8),
-                  Text(
-                    RideFormat.dateTime(ride.requestedAt),
-                    style: const TextStyle(fontWeight: FontWeight.w600),
-                  ),
-                  const Spacer(),
-                  RideStatusChip(status: ride.status),
-                ],
-              ),
-              const SizedBox(height: 12),
-              RouteSummary(
-                pickup: ride.pickup,
-                destination: ride.destination,
-                dense: true,
-              ),
-              const SizedBox(height: 10),
-              Row(
-                children: [
-                  Text(
-                    ride.rideCode,
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: AppColors.onSurfaceVariant,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  const Spacer(),
-                  if (ride.status == RideStatus.completed) ...[
-                    PaymentStatusChip(
-                      status: ride.paymentStatus,
-                      method: ride.payment?.method,
-                    ),
-                    const SizedBox(width: 10),
-                  ],
-                  if (ride.status != RideStatus.noDriverAvailable)
-                    Text(
-                      RideFormat.money(ride.fare.payable),
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w700,
-                        fontSize: 16,
+    final (vehicleBg, vehicleFg) = _vehicleBadgeColors(ride.rideType);
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: _line),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF0F172A).withValues(alpha: 0.04),
+            blurRadius: 14,
+            offset: const Offset(0, 4),
+          ),
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.01),
+            blurRadius: 2,
+            offset: const Offset(0, 1),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(18),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(18),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Top Row: Vehicle Icon Badge + Ride Type & Date + Status Chip
+                Row(
+                  children: [
+                    Container(
+                      width: 38,
+                      height: 38,
+                      decoration: BoxDecoration(
+                        color: vehicleBg,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: vehicleFg.withValues(alpha: 0.2),
+                        ),
+                      ),
+                      child: Icon(
+                        rideTypeIcon(ride.rideType),
+                        color: vehicleFg,
+                        size: 20,
                       ),
                     ),
-                ],
-              ),
-            ],
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            ride.rideType.label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 14.5,
+                              fontWeight: FontWeight.w700,
+                              color: _ink,
+                              letterSpacing: -0.2,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            RideFormat.dateTime(ride.requestedAt),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: _muted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    RideStatusChip(status: ride.status),
+                  ],
+                ),
+                const SizedBox(height: 14),
+
+                // Middle: Route Visualizer
+                _RideRouteTrail(
+                  pickupTitle: ride.pickup.title,
+                  destinationTitle: ride.destination.title,
+                ),
+                const SizedBox(height: 12),
+
+                // Hairline Divider
+                const Divider(
+                  height: 1,
+                  thickness: 1,
+                  color: Color(0xFFF1F5F9),
+                ),
+                const SizedBox(height: 12),
+
+                // Bottom Row: Ride Code Pill + Payment Chip + Price + Chevron
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3.5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(color: _line),
+                      ),
+                      child: Text(
+                        ride.rideCode,
+                        style: const TextStyle(
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF475569),
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                    const Spacer(),
+                    if (ride.status == RideStatus.completed) ...[
+                      PaymentStatusChip(
+                        status: ride.paymentStatus,
+                        method: ride.payment?.method,
+                      ),
+                      const SizedBox(width: 10),
+                    ],
+                    if (ride.status != RideStatus.noDriverAvailable) ...[
+                      Text(
+                        RideFormat.money(ride.fare.payable),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 16.5,
+                          color: _ink,
+                          letterSpacing: -0.3,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                    ],
+                    const Icon(
+                      Icons.chevron_right_rounded,
+                      color: Color(0xFF94A3B8),
+                      size: 20,
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
+    );
+  }
+}
+
+class _RideRouteTrail extends StatelessWidget {
+  const _RideRouteTrail({
+    required this.pickupTitle,
+    required this.destinationTitle,
+  });
+
+  final String pickupTitle;
+  final String destinationTitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        // Pickup row
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: const Color(0xFF10B981),
+                shape: BoxShape.circle,
+                border: Border.all(color: const Color(0xFFA7F3D0), width: 1.5),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                pickupTitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
+            ),
+          ],
+        ),
+
+        // Vertical Connector
+        Row(
+          children: [
+            const SizedBox(width: 4),
+            Container(
+              width: 2,
+              height: 14,
+              color: const Color(0xFFE2E8F0),
+            ),
+            const SizedBox(width: 18),
+            const Expanded(
+              child: SizedBox(height: 14),
+            ),
+          ],
+        ),
+
+        // Destination row
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              width: 10,
+              height: 10,
+              decoration: BoxDecoration(
+                color: AppColors.bhagwa,
+                borderRadius: BorderRadius.circular(2.5),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                destinationTitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 13.5,
+                  fontWeight: FontWeight.w600,
+                  color: Color(0xFF1E293B),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
