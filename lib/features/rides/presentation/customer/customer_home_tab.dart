@@ -261,6 +261,12 @@ class _CustomerHomeTabState extends ConsumerState<CustomerHomeTab> {
                             onRetry: _locatePickup,
                             onSearch: () => _openSearch(PlaceField.pickup),
                           ),
+                        const SizedBox(height: 16),
+
+                        // Tirvona Circuit: multi-stop packages.
+                        RideCircuitEntryCard(
+                          onTap: () => context.push(AppRoutes.customerCircuits),
+                        ),
                         const SizedBox(height: 22),
 
                         // 4. Saved Places
@@ -294,6 +300,69 @@ class _CustomerHomeTabState extends ConsumerState<CustomerHomeTab> {
                 ],
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Entry point to Tirvona Circuit, next to the normal booking card.
+class RideCircuitEntryCard extends StatelessWidget {
+  const RideCircuitEntryCard({super.key, required this.onTap});
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      borderRadius: BorderRadius.circular(18),
+      clipBehavior: Clip.antiAlias,
+      child: Ink(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [AppColors.midnightBlue, Color(0xFF1E3A5F)],
+          ),
+        ),
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 12, 14),
+            child: Row(
+              children: [
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: AppColors.bhagwa,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(Icons.temple_hindu, color: Colors.white),
+                ),
+                const SizedBox(width: 14),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Ride Circuit',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        'Explore multiple temples in one booking',
+                        style: TextStyle(color: Colors.white70, fontSize: 12.5),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right, color: Colors.white),
+              ],
+            ),
           ),
         ),
       ),

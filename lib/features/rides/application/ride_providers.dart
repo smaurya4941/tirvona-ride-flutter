@@ -40,11 +40,12 @@ DriverPosition? latestDriverPosition(
 const liveRoutePollInterval = Duration(seconds: 20);
 
 /// The driver's live road route for a ride in [status] (driver → pickup
-/// while accepted, driver → destination while started). Keyed on the status
+/// while accepted, driver → destination — a circuit's current stop — while
+/// started). Keyed on the status
 /// too, so a stage change fetches the new leg at once. Polls while watched;
 /// a failed poll keeps the last route instead of blanking the map.
 final liveRouteProvider = StreamProvider.autoDispose
-    .family<LiveRoute?, ({String rideId, RideStatus status})>((
+    .family<LiveRoute?, ({String rideId, RideStatus status, int leg})>((
       ref,
       key,
     ) async* {
@@ -73,7 +74,14 @@ LiveRoute? watchLiveRoute(WidgetRef ref, Ride ride) {
     return null;
   }
   return ref
-      .watch(liveRouteProvider((rideId: ride.id, status: ride.status)))
+      // A circuit's trip leg changes with each stop: refetch for the new one.
+      .watch(
+        liveRouteProvider((
+          rideId: ride.id,
+          status: ride.status,
+          leg: ride.circuit?.currentStopOrder ?? 0,
+        )),
+      )
       .value;
 }
 

@@ -59,6 +59,16 @@ abstract final class ApiEndpoints {
   static String rideCancellation(String id) => '/rides/$id/cancellation';
   static String rideRoute(String id) => '/rides/$id/route';
 
+  // Tirvona Circuit
+  static const circuitPackages = '/circuit-packages';
+  static String circuitPackage(String id) => '/circuit-packages/$id';
+  static const circuitRides = '/circuit-rides';
+  static const circuitEstimate = '/circuit-rides/estimate';
+  static String circuitAction(String id, String action) =>
+      '/circuit-rides/$id/$action';
+  static String circuitStopAction(String id, int order, String action) =>
+      '/circuit-rides/$id/stops/$order/$action';
+
   // ── Phase 7 ───────────────────────────────────────────────────────────
   static const promotions = '/promotions';
   static const promotionsValidate = '/promotions/validate';

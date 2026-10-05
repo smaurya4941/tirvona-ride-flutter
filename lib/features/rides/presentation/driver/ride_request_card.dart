@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../../../app/router/app_routes.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../circuit/presentation/widgets/circuit_widgets.dart';
 import '../../application/ride_providers.dart';
 import '../../data/ride_repository.dart';
 import '../../domain/ride_formatters.dart';
@@ -67,6 +68,7 @@ class _RideRequestCardState extends ConsumerState<RideRequestCard> {
   @override
   Widget build(BuildContext context) {
     final ride = widget.ride;
+    final circuit = ride.circuit;
     return Card(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
@@ -92,7 +94,9 @@ class _RideRequestCardState extends ConsumerState<RideRequestCard> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'New ${ride.rideType.label} request',
+                        circuit != null
+                            ? 'Circuit request'
+                            : 'New ${ride.rideType.label} request',
                         style: const TextStyle(
                           fontWeight: FontWeight.w700,
                           fontSize: 16,
@@ -120,14 +124,38 @@ class _RideRequestCardState extends ConsumerState<RideRequestCard> {
               ],
             ),
             const SizedBox(height: 14),
-            RouteSummary(pickup: ride.pickup, destination: ride.destination),
-            const SizedBox(height: 10),
-            Text(
-              'Trip ${RideFormat.distance(ride.distanceMeters)} · '
-              '~${RideFormat.duration(ride.durationSeconds)}'
-              '${ride.customer == null ? '' : ' · ${ride.customer!.name}'}',
-              style: const TextStyle(color: AppColors.onSurfaceVariant),
-            ),
+            if (circuit != null) ...[
+              // A circuit keeps the driver for hours: show the whole job.
+              CircuitBadge(circuit: circuit),
+              const SizedBox(height: 12),
+              CircuitStopsTimeline(
+                stops: circuit.stops,
+                pickup: ride.pickup.title,
+                compact: true,
+              ),
+              Text(
+                'Package ${RideFormat.money(circuit.pricing.basePrice)} · '
+                '${circuit.passengers} passenger'
+                '${circuit.passengers == 1 ? '' : 's'}'
+                '${ride.customer == null ? '' : ' · ${ride.customer!.name}'}',
+                style: const TextStyle(color: AppColors.onSurfaceVariant),
+              ),
+              const SizedBox(height: 4),
+              const Text(
+                'You stay with the customer for the whole circuit and get no '
+                'other requests until it ends.',
+                style: TextStyle(fontSize: 12, color: AppColors.bhagwaDark),
+              ),
+            ] else ...[
+              RouteSummary(pickup: ride.pickup, destination: ride.destination),
+              const SizedBox(height: 10),
+              Text(
+                'Trip ${RideFormat.distance(ride.distanceMeters)} · '
+                '~${RideFormat.duration(ride.durationSeconds)}'
+                '${ride.customer == null ? '' : ' · ${ride.customer!.name}'}',
+                style: const TextStyle(color: AppColors.onSurfaceVariant),
+              ),
+            ],
             if (ride.assignmentExpiresAt != null) ...[
               const SizedBox(height: 14),
               _ResponseCountdown(expiresAt: ride.assignmentExpiresAt!),

@@ -57,6 +57,33 @@ enum SosStatus {
   };
 }
 
+/// Whether one emergency contact received the WhatsApp alert (no phone number).
+enum SosContactState {
+  sent,
+  failed,
+  pending;
+
+  static SosContactState fromWire(String? value) => switch (value) {
+    'SENT' => SosContactState.sent,
+    'FAILED' => SosContactState.failed,
+    _ => SosContactState.pending,
+  };
+}
+
+@immutable
+class SosContactStatus {
+  const SosContactStatus({required this.name, required this.state});
+
+  factory SosContactStatus.fromJson(Map<String, dynamic> json) =>
+      SosContactStatus(
+        name: json['name'] as String? ?? '',
+        state: SosContactState.fromWire(json['status'] as String?),
+      );
+
+  final String name;
+  final SosContactState state;
+}
+
 @immutable
 class SosAlert {
   const SosAlert({
@@ -66,6 +93,7 @@ class SosAlert {
     required this.status,
     required this.triggeredAt,
     required this.locationSource,
+    this.contacts = const [],
   });
 
   factory SosAlert.fromJson(Map<String, dynamic> json) => SosAlert(
@@ -79,6 +107,10 @@ class SosAlert {
     locationSource:
         (json['location'] as Map<String, dynamic>?)?['source'] as String? ??
         'DEVICE',
+    contacts: [
+      for (final item in json['contacts'] as List<dynamic>? ?? const [])
+        SosContactStatus.fromJson(item as Map<String, dynamic>),
+    ],
   );
 
   final String id;
@@ -89,6 +121,12 @@ class SosAlert {
 
   /// DEVICE | DRIVER_LAST_KNOWN | RIDE_PICKUP.
   final String locationSource;
+
+  /// The emergency contacts messaged on WhatsApp with the live location.
+  final List<SosContactStatus> contacts;
+
+  bool get contactsStillSending =>
+      contacts.any((contact) => contact.state == SosContactState.pending);
 }
 
 @immutable

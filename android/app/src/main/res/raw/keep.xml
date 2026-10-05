@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- The alert sounds are looked up by name at runtime (notification channels
+     and FCM), so the release resource shrinker would otherwise drop them as
+     unused. Do not remove. -->
+<resources
+    xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@raw/ride_request,@raw/ride_update,@raw/sos_alert" />

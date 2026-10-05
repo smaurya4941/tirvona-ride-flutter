@@ -1,22 +1,23 @@
 import 'package:flutter/material.dart';
 
-/// The API's password policy (common/validation/password.ts): at least 8
-/// characters with a lowercase and an uppercase letter, a digit and a symbol.
-/// The server re-checks; this only gives instant feedback.
-final strongPasswordPattern = RegExp(
-  r'^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^\da-zA-Z]).{8,}$',
-);
+/// The API's password policy (common/validation/password.ts): any
+/// characters, 6 to 128 of them. The server re-checks; this only gives
+/// instant feedback.
+const passwordMinLength = 6;
+const passwordMaxLength = 128;
 
-const passwordRequirements =
-    'At least 8 characters with upper & lower case, a number and a symbol';
+const passwordRequirements = 'At least 6 characters. Anything you like.';
 
 String? validateNewPassword(String? value) {
   final password = value ?? '';
   if (password.isEmpty) return 'Enter a password';
-  if (password.length > 128) return 'Use at most 128 characters';
-  return strongPasswordPattern.hasMatch(password)
-      ? null
-      : 'Password does not meet the requirements';
+  if (password.length < passwordMinLength) {
+    return 'Use at least $passwordMinLength characters';
+  }
+  if (password.length > passwordMaxLength) {
+    return 'Use at most $passwordMaxLength characters';
+  }
+  return null;
 }
 
 /// A password input with a show/hide toggle, used by sign-in, sign-up,

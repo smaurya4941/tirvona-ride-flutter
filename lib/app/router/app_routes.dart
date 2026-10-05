@@ -38,6 +38,14 @@ abstract final class AppRoutes {
   static String customerMapPickerFor(String field) =>
       '$customerMapPicker?field=$field';
   static const customerRideOptions = '/customer/book/options';
+  // Tirvona Circuit: packages → details → pickup, vehicle & estimate → book.
+  static const customerCircuits = '/customer/circuits';
+  static const customerCircuitPattern = '/customer/circuits/:id';
+  static String customerCircuit(String id) => '/customer/circuits/$id';
+  static const customerCircuitBookPattern = '/customer/circuits/:id/book';
+  static String customerCircuitBook(String id) => '/customer/circuits/$id/book';
+  static const customerPickPickup =
+      '$customerPlaceSearch?field=pickup&mode=pick';
   static const customerRidePattern = '/customer/rides/:id';
   static String customerRide(String id) => '/customer/rides/$id';
   static const customerRidePaymentPattern = '/customer/rides/:id/pay';

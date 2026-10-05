@@ -9,10 +9,10 @@ import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/error_banner.dart';
 import '../../../shared/widgets/load_error_view.dart';
 import '../../../shared/widgets/loading_filled_button.dart';
+import '../../rides/presentation/widgets/call_button.dart';
 import '../../rides/presentation/widgets/ride_widgets.dart';
 import '../models/safety_models.dart';
 import '../repository/safety_repository.dart';
-import '../widgets/sos_button.dart';
 
 /// Profile → Emergency contacts. The people the safety team can reach if
 /// this user raises an SOS. One is primary; the server enforces the limit,
@@ -112,8 +112,10 @@ class EmergencyContactsScreen extends ConsumerWidget {
                 leading: Icon(Icons.shield_outlined, color: AppColors.bhagwa),
                 title: Text('Who should we reach in an emergency?'),
                 subtitle: Text(
-                  'If you press SOS during a ride, the Tirvona safety team '
-                  'sees these contacts and can call them.',
+                  'If you press SOS during a ride, Tirvona sends these '
+                  'people a WhatsApp message with your live location and a '
+                  'tracking link, and the safety team can call them. Only '
+                  'add people who are OK with that, and who use WhatsApp.',
                 ),
               ),
             ),

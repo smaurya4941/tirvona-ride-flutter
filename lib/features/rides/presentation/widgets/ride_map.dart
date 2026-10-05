@@ -22,6 +22,20 @@ enum RideMapStage {
   trip,
 }
 
+/// An intermediate stop drawn on the map (circuit stops), marked done or not.
+@immutable
+class RideMapStop {
+  const RideMapStop({
+    required this.place,
+    required this.label,
+    this.done = false,
+  });
+
+  final Place place;
+  final String label;
+  final bool done;
+}
+
 /// Colour and glyph of a pickup/destination marker.
 @immutable
 class RideMapPin {
@@ -70,9 +84,13 @@ class RideMap extends StatefulWidget {
     this.padding = const EdgeInsets.all(48),
     this.routePolyline,
     this.liveRoute,
-    this.pickupStyle = const RideMapPin(AppColors.success, Icons.person_pin_circle),
+    this.pickupStyle = const RideMapPin(
+      AppColors.success,
+      Icons.person_pin_circle,
+    ),
     this.destinationStyle = const RideMapPin(AppColors.bhagwa, Icons.flag),
     this.refitSignal = 0,
+    this.stops = const [],
   });
 
   final Place pickup;
@@ -97,6 +115,10 @@ class RideMap extends StatefulWidget {
 
   /// Bump to re-frame the map (a "recenter" button).
   final int refitSignal;
+
+  /// Circuit stops between the pickup and the destination, in order. Shown
+  /// as numbered markers and framed in the overview.
+  final List<RideMapStop> stops;
 
   @override
   State<RideMap> createState() => _RideMapState();
@@ -291,6 +313,7 @@ class _RideMapState extends State<RideMap> with SingleTickerProviderStateMixin {
       RideMapStage.overview => [
         _latLng(widget.pickup),
         _latLng(widget.destination),
+        for (final stop in widget.stops) _latLng(stop.place),
         ..._bookingPath,
       ],
       RideMapStage.approach => [_latLng(widget.pickup), ?driver, ..._livePath],
@@ -353,6 +376,19 @@ class _RideMapState extends State<RideMap> with SingleTickerProviderStateMixin {
         ),
         zIndexInt: 1,
       ),
+      for (final (index, stop) in widget.stops.indexed)
+        Marker(
+          markerId: MarkerId('stop-$index'),
+          position: _latLng(stop.place),
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+            stop.done ? BitmapDescriptor.hueGreen : BitmapDescriptor.hueOrange,
+          ),
+          alpha: stop.done ? 0.6 : 1,
+          infoWindow: InfoWindow(
+            title: stop.label,
+            snippet: stop.place.address,
+          ),
+        ),
       if (driver != null)
         Marker(
           markerId: _driverId,

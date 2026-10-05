@@ -47,7 +47,7 @@
              channel created in MainActivity, with the Tirvona emblem icon. -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
-            android:value="tirvona_rides" />
+            android:value="tirvona_rides_v3" />
         <!-- Status-bar icons must be a white silhouette; the full-colour
              launcher icon would show as a white square. -->
         <meta-data

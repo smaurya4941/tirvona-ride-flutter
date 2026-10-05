@@ -150,7 +150,8 @@ class SocketIoRealtimeClient implements RealtimeClient {
           }
           return;
         }
-        if (!event.startsWith('ride.')) return;
+        // Ride status events, and circuit progress (stops, usage, warnings).
+        if (!event.startsWith('ride.') && !event.startsWith('circuit.')) return;
         final parsed = RealtimeEvent.tryParse(event, data);
         if (parsed != null) {
           _eventController.add(parsed);

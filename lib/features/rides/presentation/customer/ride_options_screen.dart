@@ -245,6 +245,8 @@ class _RideOptionsScreenState extends ConsumerState<RideOptionsScreen> {
                       ],
                     ),
                     const SizedBox(height: 6),
+                    if (estimates.any((estimate) => estimate.fare.isPeak))
+                      const _PeakBanner(),
                     ...booking.estimates.when(
                       skipLoadingOnRefresh: false,
                       loading: () => [
@@ -584,6 +586,40 @@ class _EndRow extends StatelessWidget {
   return (tint: const Color(0xFFEFF2F7), color: _ink);
 }
 
+/// Shown above the ride list while any ride is priced at a peak rate.
+class _PeakBanner extends StatelessWidget {
+  const _PeakBanner();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF7ED),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: const Color(0xFFFED7AA)),
+      ),
+      child: const Row(
+        children: [
+          Icon(Icons.bolt_rounded, size: 18, color: Color(0xFFC2410C)),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'Peak pricing is active. Fares are higher than usual right now.',
+              style: TextStyle(
+                fontSize: 12.5,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF9A3412),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class _RideTile extends StatelessWidget {
   const _RideTile({
     required this.estimate,
@@ -727,6 +763,10 @@ class _RideTile extends StatelessWidget {
                             decoration: TextDecoration.lineThrough,
                           ),
                         ),
+                      if (estimate.fare.peak case final peak?) ...[
+                        const SizedBox(height: 3),
+                        PeakBadge(peak: peak),
+                      ],
                     ],
                   ),
                   const SizedBox(width: 10),

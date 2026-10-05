@@ -11,11 +11,14 @@ import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/error_banner.dart';
 import '../../../../shared/widgets/load_error_view.dart';
 import '../../../../shared/widgets/loading_filled_button.dart';
+import '../../../circuit/presentation/widgets/circuit_widgets.dart';
+import '../../../driver/circuit/driver_circuit_panel.dart';
 import '../../../safety/widgets/sos_button.dart';
 import '../../application/ride_providers.dart';
 import '../../data/ride_repository.dart';
 import '../../domain/ride_formatters.dart';
 import '../../domain/ride_models.dart';
+import '../widgets/call_button.dart';
 import '../widgets/cancel_ride_sheet.dart';
 import '../widgets/ride_map.dart';
 import '../widgets/ride_widgets.dart';
@@ -48,7 +51,11 @@ class DriverRideScreen extends ConsumerWidget {
           icon: const Icon(Icons.arrow_back),
           onPressed: leave,
         ),
-        title: Text(ride == null ? 'Ride' : 'Ride ${ride.rideCode}'),
+        title: Text(
+          ride == null
+              ? 'Ride'
+              : '${ride.isCircuit ? 'Circuit' : 'Ride'} ${ride.rideCode}',
+        ),
         actions: [
           // Once the driver is committed to the ride, until it ends.
           if (ride != null &&
@@ -62,13 +69,22 @@ class DriverRideScreen extends ConsumerWidget {
         ],
       ),
       body: ride != null
-          ? Column(
-              children: [
-                if (rideAsync.hasError) const ReconnectingBanner(),
-                Expanded(
-                  child: _DriverRideBody(ride: ride, onLeave: leave),
-                ),
-              ],
+          ? CircuitNoticeListener(
+              ride: ride,
+              asDriver: true,
+              child: Column(
+                children: [
+                  if (rideAsync.hasError) const ReconnectingBanner(),
+                  Expanded(
+                    // A running circuit gets its own screen: stops, timer and
+                    // the stop commands. Everything else is the shared flow.
+                    child:
+                        ride.isCircuit && ride.status == RideStatus.rideStarted
+                        ? DriverCircuitPanel(ride: ride)
+                        : _DriverRideBody(ride: ride, onLeave: leave),
+                  ),
+                ],
+              ),
             )
           : rideAsync.hasError
           ? LoadErrorView(
@@ -189,6 +205,12 @@ class _DriverRideBodyState extends ConsumerState<_DriverRideBody> {
         'Trip in progress',
         'Drop the customer at ${ride.destination.title}.',
       ),
+      RideStatus.completed when ride.isCircuit => (
+        Icons.check_circle,
+        'Circuit completed',
+        'Final fare ${RideFormat.money(ride.fare.payable)} for '
+            '${ride.circuit!.name}. You are available for new requests.',
+      ),
       RideStatus.completed => (
         Icons.check_circle,
         'Ride completed',
@@ -280,68 +302,62 @@ class _DriverRideBodyState extends ConsumerState<_DriverRideBody> {
               subtitle: customer.phone == null ? null : Text(customer.phone!),
               trailing: customer.phone == null
                   ? null
-                  : IconButton(
-                      tooltip: 'Copy phone number',
-                      icon: const Icon(Icons.copy),
-                      onPressed: () async {
-                        await Clipboard.setData(
-                          ClipboardData(text: customer.phone!),
-                        );
-                        if (!context.mounted) return;
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('Copied ${customer.phone}')),
-                        );
-                      },
-                    ),
+                  : CallIconButton(phone: customer.phone!, name: customer.name),
             ),
           ),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(18),
-            child: Column(
-              children: [
-                RouteSummary(
-                  pickup: ride.pickup,
-                  destination: ride.destination,
-                ),
-                const Divider(height: 28),
-                Row(
-                  children: [
-                    StatTile(
-                      icon: rideTypeIcon(ride.rideType),
-                      label: 'Ride',
-                      value: ride.rideType.label,
-                    ),
-                    StatTile(
-                      icon: Icons.straighten,
-                      label: 'Trip',
-                      value: RideFormat.distance(ride.distanceMeters),
-                    ),
-                    StatTile(
-                      icon: Icons.currency_rupee,
-                      label: ride.fare.hasDiscount
-                          ? 'Collect'
-                          : ride.fare.finalFare != null
-                          ? 'Fare'
-                          : 'Est. fare',
-                      value: RideFormat.money(ride.fare.payable),
-                    ),
-                  ],
-                ),
-              ],
+        if (ride.isCircuit)
+          DriverCircuitSummaryCard(ride: ride)
+        else
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                children: [
+                  RouteSummary(
+                    pickup: ride.pickup,
+                    destination: ride.destination,
+                  ),
+                  const Divider(height: 28),
+                  Row(
+                    children: [
+                      StatTile(
+                        icon: rideTypeIcon(ride.rideType),
+                        label: 'Ride',
+                        value: ride.rideType.label,
+                      ),
+                      StatTile(
+                        icon: Icons.straighten,
+                        label: 'Trip',
+                        value: RideFormat.distance(ride.distanceMeters),
+                      ),
+                      StatTile(
+                        icon: Icons.currency_rupee,
+                        label: ride.fare.hasDiscount
+                            ? 'Collect'
+                            : ride.fare.finalFare != null
+                            ? 'Fare'
+                            : 'Est. fare',
+                        value: RideFormat.money(ride.fare.payable),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
         if (ride.status == RideStatus.completed) ...[
           const SizedBox(height: 12),
           _CustomerPaymentCard(ride: ride),
           const SizedBox(height: 12),
-          FareBreakdownCard(
-            title: 'Fare',
-            fare: ride.fare,
-            distanceMeters: ride.distanceMeters,
-            durationSeconds: ride.durationSeconds,
-          ),
+          if (ride.isCircuit)
+            CircuitBillCard(ride: ride)
+          else
+            FareBreakdownCard(
+              title: 'Fare',
+              fare: ride.fare,
+              distanceMeters: ride.distanceMeters,
+              durationSeconds: ride.durationSeconds,
+            ),
         ],
         const SizedBox(height: 20),
         ErrorBanner(message: _error),

@@ -1,4 +1,5 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
@@ -17,6 +18,9 @@ import '../../features/auth/presentation/signup_otp_screen.dart';
 import '../../features/auth/presentation/splash_hold.dart';
 import '../../features/auth/presentation/splash_screen.dart';
 import '../../features/complaints/screens/support_screens.dart';
+import '../../features/customer/circuit/circuit_booking_screen.dart';
+import '../../features/customer/circuit/circuit_details_screen.dart';
+import '../../features/customer/circuit/circuit_list_screen.dart';
 import '../../features/customer/payments/screens/payment_receipt_screen.dart';
 import '../../features/customer/payments/screens/ride_payment_screen.dart';
 import '../../features/customer/presentation/customer_shell.dart';
@@ -145,6 +149,9 @@ String? resolveRedirect(
   return isAllowed ? null : home;
 }
 
+/// Global navigator key for top-level overlays (such as heads-up notification banners).
+final rootNavigatorKey = GlobalKey<NavigatorState>();
+
 /// Built once. Session changes (login, logout, OTP verification, KYC
 /// submission, approval) and the end of the splash hold bump [refresh],
 /// which makes GoRouter re-run the redirect against the latest session
@@ -156,6 +163,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
     ..listen(splashHoldProvider, (_, _) => refresh.value++);
 
   final router = GoRouter(
+    navigatorKey: rootNavigatorKey,
     initialLocation: AppRoutes.splash,
     debugLogDiagnostics: kDebugMode,
     refreshListenable: refresh,
@@ -277,6 +285,20 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.customerRideOptions,
         builder: (context, state) => const RideOptionsScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.customerCircuits,
+        builder: (context, state) => const CircuitListScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.customerCircuitBookPattern,
+        builder: (context, state) =>
+            CircuitBookingScreen(packageId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: AppRoutes.customerCircuitPattern,
+        builder: (context, state) =>
+            CircuitDetailsScreen(packageId: state.pathParameters['id']!),
       ),
       GoRoute(
         path: AppRoutes.customerRidePattern,

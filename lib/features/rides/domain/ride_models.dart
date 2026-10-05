@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import '../../circuit/domain/circuit_models.dart';
+
 /// Mirrors the backend's `RideStatus` (rides/ride-state-machine.ts). The
 /// server owns every transition; the app only renders the current value.
 enum RideStatus {
@@ -231,11 +233,49 @@ class Place {
   int get hashCode => Object.hash(address, latitude, longitude);
 }
 
+/// The peak-hour slot that raised a fare's per-km rate. Decided by the
+/// server; the app only shows it.
+class PeakFare {
+  const PeakFare({
+    required this.name,
+    required this.hikePercent,
+    this.startTime,
+    this.endTime,
+    this.surcharge = 0,
+  });
+
+  factory PeakFare.fromJson(Map<String, dynamic> json) => PeakFare(
+    name: json['name'] as String? ?? 'Peak pricing',
+    hikePercent: _double(json['hikePercent']),
+    startTime: json['startTime'] as String?,
+    endTime: json['endTime'] as String?,
+    surcharge: _double(json['surcharge']),
+  );
+
+  final String name;
+  final double hikePercent;
+  final String? startTime;
+  final String? endTime;
+
+  /// Extra distance charge caused by the peak, rupees.
+  final double surcharge;
+
+  /// "+50%" / "+12.5%".
+  String get hikeLabel {
+    final text = hikePercent == hikePercent.roundToDouble()
+        ? hikePercent.toStringAsFixed(0)
+        : hikePercent.toString();
+    return '+$text%';
+  }
+}
+
 class FareBreakdown {
   const FareBreakdown({
     required this.currency,
     required this.baseFare,
     required this.perKmRate,
+    this.basePerKmRate,
+    this.peak,
     required this.perMinuteRate,
     required this.minimumFare,
     required this.distanceCharge,
@@ -256,6 +296,10 @@ class FareBreakdown {
     currency: json['currency'] as String? ?? 'INR',
     baseFare: _double(json['baseFare']),
     perKmRate: _double(json['perKmRate']),
+    basePerKmRate: (json['basePerKmRate'] as num?)?.toDouble(),
+    peak: json['peak'] is Map<String, dynamic>
+        ? PeakFare.fromJson(json['peak'] as Map<String, dynamic>)
+        : null,
     perMinuteRate: _double(json['perMinuteRate']),
     minimumFare: _double(json['minimumFare']),
     distanceCharge: _double(json['distanceCharge']),
@@ -270,7 +314,16 @@ class FareBreakdown {
 
   final String currency;
   final double baseFare;
+
+  /// What the trip is charged per km: the base rate, or the peak rate while
+  /// [peak] is set.
   final double perKmRate;
+
+  /// The permanent per-km rate (null from servers without peak pricing).
+  final double? basePerKmRate;
+
+  /// Set when a peak-hour slot raised the per-km rate for this fare.
+  final PeakFare? peak;
   final double perMinuteRate;
   final double minimumFare;
   final double distanceCharge;
@@ -297,6 +350,8 @@ class FareBreakdown {
   double get payable => payableFare ?? fare;
 
   bool get hasDiscount => (discount ?? 0) > 0;
+
+  bool get isPeak => peak != null;
 }
 
 /// The final bill as the server priced it at completion: the trip measured
@@ -640,6 +695,7 @@ class Ride {
     this.promo,
     this.zoneName,
     this.routePolyline,
+    this.circuit,
   });
 
   factory Ride.fromJson(Map<String, dynamic> json) => Ride(
@@ -685,6 +741,10 @@ class Ride {
         : RidePromoInfo.fromJson(_map(json['promo'])!),
     zoneName: _map(json['zone'])?['name'] as String?,
     routePolyline: json['routePolyline'] as String?,
+    // Only circuit rides carry it (kind == CIRCUIT).
+    circuit: json['kind'] == 'CIRCUIT' && _map(json['circuit']) != null
+        ? CircuitInfo.fromJson(_map(json['circuit'])!)
+        : null,
   );
 
   final String id;
@@ -728,6 +788,12 @@ class Ride {
   /// Pickup → destination road path at booking (Google encoded polyline,
   /// see core/maps/polyline.dart); null for straight-line estimates.
   final String? routePolyline;
+
+  /// Set on a Tirvona Circuit (a multi-stop package): its stops, usage and
+  /// running bill. Null for a normal pickup → destination ride.
+  final CircuitInfo? circuit;
+
+  bool get isCircuit => circuit != null;
 
   /// Completed, and the customer still owes the final fare.
   bool get awaitsPayment =>

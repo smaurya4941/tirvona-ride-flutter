@@ -589,7 +589,10 @@ class _HistoryCard extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            ride.rideType.label,
+                            // A circuit is known by its package.
+                            ride.circuit == null
+                                ? ride.rideType.label
+                                : '${ride.circuit!.name} · ${ride.rideType.label}',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: const TextStyle(
@@ -622,7 +625,10 @@ class _HistoryCard extends StatelessWidget {
                 // Middle: Route Visualizer
                 _RideRouteTrail(
                   pickupTitle: ride.pickup.title,
-                  destinationTitle: ride.destination.title,
+                  destinationTitle: ride.circuit == null
+                      ? ride.destination.title
+                      : '${ride.circuit!.stops.length} stops · '
+                            '${ride.circuit!.stops.map((stop) => stop.name).join(' → ')}',
                 ),
                 const SizedBox(height: 12),
 

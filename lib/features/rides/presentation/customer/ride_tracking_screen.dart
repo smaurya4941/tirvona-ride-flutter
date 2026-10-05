@@ -7,6 +7,7 @@ import '../../../../app/router/app_routes.dart';
 import '../../../../core/location/driver_fix.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../shared/widgets/load_error_view.dart';
+import '../../../circuit/presentation/widgets/circuit_widgets.dart';
 import '../../../customer/payments/widgets/payment_widgets.dart';
 import '../../../customer/rating/widgets/ride_rating_card.dart';
 import '../../../safety/widgets/share_ride_button.dart';
@@ -16,6 +17,7 @@ import '../../application/ride_providers.dart';
 import '../../domain/live_tracking.dart';
 import '../../domain/ride_formatters.dart';
 import '../../domain/ride_models.dart';
+import '../widgets/call_button.dart';
 import '../widgets/cancel_ride_sheet.dart';
 import '../widgets/ride_map.dart';
 import '../widgets/ride_widgets.dart';
@@ -83,26 +85,30 @@ class RideTrackingScreen extends ConsumerWidget {
     }
 
     final mapBottomInset = MediaQuery.sizeOf(context).height * _sheetInitial;
-    return Scaffold(
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: _TrackingMap(
-              ride: ride,
-              padding: EdgeInsets.fromLTRB(48, 120, 48, mapBottomInset + 32),
+    return CircuitNoticeListener(
+      ride: ride,
+      asDriver: false,
+      child: Scaffold(
+        body: Stack(
+          children: [
+            Positioned.fill(
+              child: _TrackingMap(
+                ride: ride,
+                padding: EdgeInsets.fromLTRB(48, 120, 48, mapBottomInset + 32),
+              ),
             ),
-          ),
-          Positioned(top: 0, left: 0, right: 0, child: _TopBar(ride: ride)),
-          DraggableScrollableSheet(
-            initialChildSize: _sheetInitial,
-            minChildSize: 0.26,
-            maxChildSize: 0.92,
-            snap: true,
-            snapSizes: const [_sheetInitial],
-            builder: (context, controller) =>
-                _RideSheet(ride: ride, controller: controller),
-          ),
-        ],
+            Positioned(top: 0, left: 0, right: 0, child: _TopBar(ride: ride)),
+            DraggableScrollableSheet(
+              initialChildSize: _sheetInitial,
+              minChildSize: 0.26,
+              maxChildSize: 0.92,
+              snap: true,
+              snapSizes: const [_sheetInitial],
+              builder: (context, controller) =>
+                  _RideSheet(ride: ride, controller: controller),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -144,9 +150,14 @@ class _TrackingMap extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final circuit = ride.circuit;
     return RideMap(
       pickup: ride.pickup,
-      destination: ride.destination,
+      // A circuit is driven stop by stop: the map points at the current stop.
+      destination: circuit == null
+          ? ride.destination
+          : circuitMapTarget(circuit),
+      stops: circuit == null ? const [] : circuitMapStops(circuit),
       stage: _stageFor(ride.status),
       driver: _driverPosition(ref, ride),
       driverIcon: rideTypeIcon(ride.rideType),
@@ -182,42 +193,46 @@ class _TopBar extends StatelessWidget {
                   onPressed: () => context.go(AppRoutes.customerHome),
                 ),
                 const SizedBox(width: 8),
-                Flexible(
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: const [
-                        BoxShadow(blurRadius: 6, color: Colors.black12),
-                      ],
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Flexible(
-                          child: Text(
-                            'Ride ${ride.rideCode}',
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.midnightBlue,
+                Expanded(
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: const [
+                          BoxShadow(blurRadius: 6, color: Colors.black12),
+                        ],
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              'Ride ${ride.rideCode}',
+                              overflow: TextOverflow.ellipsis,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.midnightBlue,
+                              ),
                             ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        RideStatusChip(status: ride.status),
-                      ],
+                          const SizedBox(width: 6),
+                          RideStatusChip(status: ride.status),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-                const Spacer(),
+                const SizedBox(width: 8),
                 // Always in reach, never in the way of the ride controls.
                 if (_sosAvailable(ride.status))
-                  SosButton(rideId: ride.id, compact: true),
+                  SosButton(rideId: ride.id, compact: true)
+                else
+                  const SizedBox(width: 40),
               ],
             ),
           ),
@@ -279,45 +294,51 @@ class _RideSheet extends ConsumerWidget {
             _DriverCard(driver: driver),
             const SizedBox(height: 12),
           ],
+          if (ride.isCircuit) ...[
+            CircuitProgressCard(ride: ride),
+            const SizedBox(height: 12),
+          ],
           if (_sosAvailable(ride.status)) ...[
             ShareRideButton(rideId: ride.id),
             const SizedBox(height: 12),
           ],
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                children: [
-                  RouteSummary(
-                    pickup: ride.pickup,
-                    destination: ride.destination,
-                  ),
-                  const Divider(height: 28),
-                  Row(
-                    children: [
-                      StatTile(
-                        icon: rideTypeIcon(ride.rideType),
-                        label: 'Ride',
-                        value: ride.rideType.label,
-                      ),
-                      StatTile(
-                        icon: Icons.straighten,
-                        label: 'Distance',
-                        value: RideFormat.distance(ride.distanceMeters),
-                      ),
-                      StatTile(
-                        icon: Icons.currency_rupee,
-                        label: ride.fare.finalFare != null
-                            ? 'Fare'
-                            : 'Est. fare',
-                        value: RideFormat.money(ride.fare.payable),
-                      ),
-                    ],
-                  ),
-                ],
+          // A circuit's route is the stop list in the progress card above.
+          if (!ride.isCircuit)
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  children: [
+                    RouteSummary(
+                      pickup: ride.pickup,
+                      destination: ride.destination,
+                    ),
+                    const Divider(height: 28),
+                    Row(
+                      children: [
+                        StatTile(
+                          icon: rideTypeIcon(ride.rideType),
+                          label: 'Ride',
+                          value: ride.rideType.label,
+                        ),
+                        StatTile(
+                          icon: Icons.straighten,
+                          label: 'Distance',
+                          value: RideFormat.distance(ride.distanceMeters),
+                        ),
+                        StatTile(
+                          icon: Icons.currency_rupee,
+                          label: ride.fare.finalFare != null
+                              ? 'Fare'
+                              : 'Est. fare',
+                          value: RideFormat.money(ride.fare.payable),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
           if (ride.status == RideStatus.completed) ...[
             const SizedBox(height: 12),
             RidePaymentCard(ride: ride),
@@ -326,12 +347,15 @@ class _RideSheet extends ConsumerWidget {
               RideRatingCard(rideId: ride.id),
             ],
             const SizedBox(height: 12),
-            FareBreakdownCard(
-              title: 'Trip fare',
-              fare: ride.fare,
-              distanceMeters: ride.distanceMeters,
-              durationSeconds: ride.durationSeconds,
-            ),
+            if (ride.isCircuit)
+              CircuitBillCard(ride: ride)
+            else
+              FareBreakdownCard(
+                title: 'Trip fare',
+                fare: ride.fare,
+                distanceMeters: ride.distanceMeters,
+                durationSeconds: ride.durationSeconds,
+              ),
           ],
           _Actions(ride: ride),
         ],
@@ -371,7 +395,10 @@ class _StatusHero extends StatelessWidget {
     }
     final position = driverPosition;
     if (position == null) return null;
-    final target = onTrip ? ride.destination : ride.pickup;
+    final circuit = ride.circuit;
+    final target = onTrip
+        ? (circuit == null ? ride.destination : circuitMapTarget(circuit))
+        : ride.pickup;
     final meters = distanceMeters(
       position.latitude,
       position.longitude,
@@ -388,12 +415,56 @@ class _StatusHero extends StatelessWidget {
     final driverName = ride.driver?.name ?? 'Your driver';
     final live = _liveDistance();
     final notice = arriving;
+    final circuit = ride.circuit;
+    final atStop = circuit?.currentStop;
     final (
       IconData icon,
       Color color,
       String title,
       String body,
     ) = switch (ride.status) {
+      RideStatus.searching when circuit != null => (
+        Icons.radar,
+        AppColors.bhagwa,
+        'Finding your driver',
+        'Looking for a ${ride.rideType.label.toLowerCase()} for '
+            '${circuit.name} near ${ride.pickup.title}…',
+      ),
+      RideStatus.rideStarted when circuit != null && circuit.hasException => (
+        Icons.report_problem_outlined,
+        AppColors.warning,
+        'We are sorting out a stop',
+        'Your driver reported a stop as unreachable. Tirvona support will '
+            'decide how to continue in a moment.',
+      ),
+      RideStatus.rideStarted when circuit != null && atStop != null => (
+        atStop.status.isAtStop ? Icons.temple_hindu : Icons.route,
+        AppColors.bhagwa,
+        atStop.status.isAtStop
+            ? 'At ${atStop.name}'
+            : 'Heading to ${atStop.name}',
+        atStop.status.isAtStop
+            ? 'Take your time. Your driver waits here; the included time '
+                  'keeps running.'
+            : 'Stop ${atStop.order} of ${circuit.stops.length}'
+                  '${live == null ? '' : ' · $live'}.',
+      ),
+      RideStatus.rideStarted when circuit != null => (
+        Icons.flag,
+        AppColors.success,
+        'All stops visited',
+        'Your driver will now complete the circuit.',
+      ),
+      RideStatus.completed when circuit != null => (
+        Icons.check_circle,
+        AppColors.success,
+        'Circuit complete',
+        ride.paymentStatus.isPaid
+            ? 'Paid ${RideFormat.money(ride.fare.payable)}. Thank you for '
+                  'travelling with Tirvona.'
+            : 'Final fare ${RideFormat.money(ride.fare.payable)}. Please '
+                  'complete the payment.',
+      ),
       RideStatus.searching => (
         Icons.radar,
         AppColors.bhagwa,
@@ -659,17 +730,7 @@ class _DriverCard extends StatelessWidget {
               ),
             ),
             if (driver.phone.isNotEmpty)
-              IconButton.filledTonal(
-                tooltip: 'Copy driver phone number',
-                onPressed: () async {
-                  await Clipboard.setData(ClipboardData(text: driver.phone));
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Copied ${driver.phone}')),
-                  );
-                },
-                icon: const Icon(Icons.phone),
-              ),
+              CallIconButton(phone: driver.phone, name: driver.name),
           ],
         ),
       ),
@@ -720,6 +781,13 @@ class _ActionsState extends ConsumerState<_Actions> {
   }
 
   void _bookAgain() {
+    final circuit = widget.ride.circuit;
+    if (circuit != null) {
+      ref.invalidate(activeRideProvider);
+      context.go(AppRoutes.customerHome);
+      context.push(AppRoutes.customerCircuit(circuit.packageId));
+      return;
+    }
     ref.read(bookingControllerProvider.notifier)
       ..setPickup(widget.ride.pickup)
       ..setDestination(widget.ride.destination)
@@ -746,7 +814,7 @@ class _ActionsState extends ConsumerState<_Actions> {
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
             : const Icon(Icons.close),
-        label: const Text('Cancel ride'),
+        label: Text(widget.ride.isCircuit ? 'Cancel circuit' : 'Cancel ride'),
       );
     } else if (widget.ride.awaitsPayment) {
       child = FilledButton.icon(

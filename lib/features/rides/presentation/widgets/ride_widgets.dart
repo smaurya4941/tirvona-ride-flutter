@@ -296,6 +296,8 @@ class FareBreakdownCard extends StatelessWidget {
               '${RideFormat.money(fare.perKmRate)}/km)',
               RideFormat.money(bill?.distanceCharge ?? fare.distanceCharge),
             ),
+            if (fare.peak case final peak?)
+              PeakPricingNote(fare: fare, peak: peak),
             line(
               'Time (${RideFormat.duration(duration)} × '
               '${RideFormat.money(fare.perMinuteRate)}/min)',
@@ -423,6 +425,81 @@ class ReconnectingBanner extends ConsumerWidget {
                 ],
               ),
             ),
+    );
+  }
+}
+
+/// "Peak pricing +50% on the per-km rate (₹18 → ₹27/km)": why the per-km rate
+/// is higher than usual. Shown wherever a fare breakdown is.
+class PeakPricingNote extends StatelessWidget {
+  const PeakPricingNote({super.key, required this.fare, required this.peak});
+
+  final FareBreakdown fare;
+  final PeakFare peak;
+
+  @override
+  Widget build(BuildContext context) {
+    final base = fare.basePerKmRate;
+    final rates = base == null
+        ? ''
+        : ' (${RideFormat.money(base)} → ${RideFormat.money(fare.perKmRate)}/km)';
+    return Container(
+      margin: const EdgeInsets.only(top: 4, bottom: 6),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF7ED),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: const Color(0xFFFED7AA)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.bolt_rounded, size: 16, color: Color(0xFFC2410C)),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              'Peak pricing ${peak.hikeLabel} on the per-km rate$rates',
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF9A3412),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Compact "Peak +50%" tag for ride lists.
+class PeakBadge extends StatelessWidget {
+  const PeakBadge({super.key, required this.peak});
+
+  final PeakFare peak;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFEDD5),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.bolt_rounded, size: 12, color: Color(0xFFC2410C)),
+          const SizedBox(width: 2),
+          Text(
+            'Peak ${peak.hikeLabel}',
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: Color(0xFF9A3412),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

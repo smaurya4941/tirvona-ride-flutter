@@ -348,8 +348,10 @@ void main() {
 
     test('the password rule matches the API policy', () {
       expect(validateNewPassword('Password@123'), isNull);
-      expect(validateNewPassword('password@123'), isNotNull);
-      expect(validateNewPassword('Pass@1'), isNotNull);
+      expect(validateNewPassword('abcdef'), isNull);
+      expect(validateNewPassword('123456'), isNull);
+      expect(validateNewPassword('Pass1'), isNotNull);
+      expect(validateNewPassword('a' * 129), isNotNull);
       expect(validateNewPassword(''), 'Enter a password');
     });
   });
