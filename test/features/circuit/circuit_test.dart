@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:tirvona_ride/features/circuit/application/circuit_providers.dart';
 import 'package:tirvona_ride/features/circuit/data/circuit_repository.dart';
 import 'package:tirvona_ride/features/circuit/domain/circuit_models.dart';
 import 'package:tirvona_ride/features/circuit/presentation/widgets/circuit_widgets.dart';
+import 'package:tirvona_ride/features/customer/circuit/circuit_details_screen.dart';
 import 'package:tirvona_ride/features/driver/circuit/driver_circuit_panel.dart';
 import 'package:tirvona_ride/features/rides/domain/ride_models.dart';
 
@@ -91,6 +93,36 @@ Map<String, dynamic> _ride({
     },
     'exception': ?exception,
   },
+};
+
+Map<String, dynamic> _tariff(num price, num perKm, num perHour) => {
+  'basePrice': price,
+  'includedDistanceKm': 30,
+  'includedDurationHours': 5,
+  'includedDistanceMeters': 30000,
+  'includedDurationSeconds': 18000,
+  'extraDistanceRatePerKm': perKm,
+  'extraDurationRatePerHour': perHour,
+};
+
+/// A package as `GET /circuit-packages/:id` returns it: each vehicle has its
+/// own price, cheapest first, and the package price is the cheapest one.
+Map<String, dynamic> _package() => {
+  'id': 'pkg1',
+  'code': 'CIR-001',
+  'name': 'Vrindavan Spiritual Circuit',
+  'description': 'Three temples',
+  'city': 'Vrindavan',
+  'stops': [_stop(1, 'Banke Bihari', 'UPCOMING'), _stop(2, 'Nidhivan', 'UPCOMING')],
+  'pricing': _tariff(350, 8, 30),
+  'vehicles': [
+    {'rideType': 'BIKE', 'displayName': 'Bike', 'icon': 'bike', 'seatCapacity': 1, 'maxPassengers': 1, 'pricing': _tariff(350, 8, 30)},
+    {'rideType': 'AUTO', 'displayName': 'Auto', 'icon': 'auto', 'seatCapacity': 3, 'maxPassengers': 3, 'pricing': _tariff(600, 15, 50)},
+  ],
+  'maxPassengers': 3,
+  'availability': {'days': [0, 1, 2, 3, 4, 5, 6], 'opensAt': '06:00', 'closesAt': '20:00'},
+  'availableNow': true,
+  'coverPath': null,
 };
 
 class _FakeCircuitRepository implements CircuitRepository {
@@ -189,6 +221,24 @@ void main() {
       expect(CircuitFormat.days([5, 6]), 'Sat, Sun');
     });
 
+    test('each vehicle carries its own price on the shared allowance', () {
+      final pkg = CircuitPackage.fromJson(_package());
+      expect(pkg.vehicles.map((vehicle) => vehicle.pricing.basePrice), [350, 600]);
+      final auto = pkg.vehicles.last;
+      expect(auto.pricing.extraDistanceRatePerKm, 15);
+      expect(auto.pricing.extraDurationRatePerHour, 50);
+      expect(auto.pricing.includedDistanceMeters, 30000);
+      expect(pkg.pricing.basePrice, 350);
+      expect(pkg.hasPriceRange, isTrue);
+
+      final samePrice = _package()
+        ..['vehicles'] = [
+          for (final vehicle in _package()['vehicles'] as List<dynamic>)
+            {...vehicle as Map<String, dynamic>, 'pricing': _tariff(500, 10, 40)},
+        ];
+      expect(CircuitPackage.fromJson(samePrice).hasPriceRange, isFalse);
+    });
+
     test('idempotency keys are unique per booking attempt', () {
       final keys = {for (var i = 0; i < 50; i++) newIdempotencyKey()};
       expect(keys, hasLength(50));
@@ -248,6 +298,38 @@ void main() {
       expect(find.text('₹75'), findsOneWidget);
       expect(find.text('₹50'), findsOneWidget);
       expect(find.text('₹725'), findsOneWidget);
+    });
+
+    testWidgets('package details list every vehicle with its own price', (tester) async {
+      final pkg = CircuitPackage.fromJson(_package());
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [circuitPackageProvider('pkg1').overrideWith((ref) async => pkg)],
+          child: const MaterialApp(home: CircuitDetailsScreen(packageId: 'pkg1')),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.scrollUntilVisible(find.byKey(const ValueKey('circuit-vehicle-AUTO')), 200);
+      final bike = find.byKey(const ValueKey('circuit-vehicle-BIKE'));
+      final auto = find.byKey(const ValueKey('circuit-vehicle-AUTO'));
+      expect(find.descendant(of: bike, matching: find.text('₹350')), findsOneWidget);
+      expect(find.descendant(of: bike, matching: find.textContaining('Extra ₹8 / km')), findsOneWidget);
+      expect(find.descendant(of: auto, matching: find.text('₹600')), findsOneWidget);
+      expect(find.descendant(of: auto, matching: find.textContaining('Extra ₹15 / km · ₹50 / hour')), findsOneWidget);
+      // The shared section shows only what every vehicle includes, not one vehicle's price.
+      expect(find.text('Package price'), findsNothing);
+      expect(find.text('Included time'), findsOneWidget);
+    });
+
+    testWidgets('fare rules without rates show only the included time and distance', (tester) async {
+      final pricing = CircuitPricing.fromJson(_tariff(600, 15, 50));
+      await tester.pumpWidget(host(CircuitFareRules(pricing: pricing, showRates: false)));
+      expect(find.text('Package price'), findsNothing);
+      expect(find.text('Extra distance'), findsNothing);
+      expect(find.text('30 km'), findsOneWidget);
+      await tester.pumpWidget(host(CircuitFareRules(pricing: pricing)));
+      expect(find.text('Package price'), findsOneWidget);
+      expect(find.text('₹15 / km'), findsOneWidget);
     });
 
     testWidgets('driver panel at a stop: continue to the next stop sends the command', (tester) async {

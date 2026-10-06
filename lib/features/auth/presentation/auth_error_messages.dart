@@ -20,6 +20,9 @@ abstract final class AuthErrorCodes {
   static const passwordUnchanged = 'PASSWORD_UNCHANGED';
   static const userBlocked = 'USER_BLOCKED';
   static const invalidCredentials = 'AUTH_INVALID_CREDENTIALS';
+  static const accountDeletionBlocked = 'ACCOUNT_DELETION_BLOCKED';
+  static const accountDeletionPasswordInvalid =
+      'ACCOUNT_DELETION_PASSWORD_INVALID';
 }
 
 extension AuthApiErrors on ApiException {

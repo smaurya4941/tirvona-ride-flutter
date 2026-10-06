@@ -52,7 +52,8 @@ class CircuitStop {
   );
 }
 
-/// The package's commercial terms.
+/// The commercial terms of one vehicle on a package: the shared included
+/// distance and time, plus that vehicle's price and extra rates.
 @immutable
 class CircuitPricing {
   const CircuitPricing({
@@ -87,6 +88,7 @@ class CircuitVehicleOption {
     required this.icon,
     required this.seatCapacity,
     required this.maxPassengers,
+    required this.pricing,
   });
 
   factory CircuitVehicleOption.fromJson(Map<String, dynamic> json) =>
@@ -96,6 +98,9 @@ class CircuitVehicleOption {
         icon: json['icon'] as String? ?? '',
         seatCapacity: _int(json['seatCapacity']),
         maxPassengers: _int(json['maxPassengers']),
+        pricing: CircuitPricing.fromJson(
+          _map(json['pricing']) ?? const <String, dynamic>{},
+        ),
       );
 
   final RideTypeCode rideType;
@@ -105,6 +110,10 @@ class CircuitVehicleOption {
 
   /// The package limit capped by this vehicle's seats (server rule).
   final int maxPassengers;
+
+  /// What the circuit costs with this vehicle (each vehicle is priced
+  /// separately by Admin).
+  final CircuitPricing pricing;
 }
 
 /// `GET /circuit-packages[/:id]`: what customers browse.
@@ -165,9 +174,17 @@ class CircuitPackage {
   final String description;
   final String city;
   final List<CircuitStop> stops;
+
+  /// The cheapest vehicle's terms: the "from" price shown on lists.
   final CircuitPricing pricing;
+
+  /// Cheapest first, each with its own [CircuitVehicleOption.pricing].
   final List<CircuitVehicleOption> vehicles;
   final int maxPassengers;
+
+  /// True when the vehicles are not all the same price, so lists say "from".
+  bool get hasPriceRange =>
+      vehicles.map((vehicle) => vehicle.pricing.basePrice).toSet().length > 1;
 
   /// 0 = Monday … 6 = Sunday.
   final List<int> days;

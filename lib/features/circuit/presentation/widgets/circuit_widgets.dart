@@ -364,11 +364,18 @@ class _Gauge extends StatelessWidget {
 }
 
 /// What the package includes and exactly how extras are charged — shown
-/// before booking so nothing is hidden.
+/// before booking so nothing is hidden. With [showRates] off it shows only
+/// what every vehicle includes (prices then differ per vehicle and are
+/// listed with the vehicles).
 class CircuitFareRules extends StatelessWidget {
-  const CircuitFareRules({super.key, required this.pricing});
+  const CircuitFareRules({
+    super.key,
+    required this.pricing,
+    this.showRates = true,
+  });
 
   final CircuitPricing pricing;
+  final bool showRates;
 
   @override
   Widget build(BuildContext context) {
@@ -385,11 +392,12 @@ class CircuitFareRules extends StatelessWidget {
     );
     return Column(
       children: [
-        row(
-          Icons.sell_outlined,
-          'Package price',
-          RideFormat.money(pricing.basePrice),
-        ),
+        if (showRates)
+          row(
+            Icons.sell_outlined,
+            'Package price',
+            RideFormat.money(pricing.basePrice),
+          ),
         row(
           Icons.schedule,
           'Included time',
@@ -400,17 +408,19 @@ class CircuitFareRules extends StatelessWidget {
           'Included distance',
           CircuitFormat.includedKm(pricing.includedDistanceMeters),
         ),
-        const Divider(height: 20),
-        row(
-          Icons.add_road,
-          'Extra distance',
-          '${RideFormat.money(pricing.extraDistanceRatePerKm)} / km',
-        ),
-        row(
-          Icons.more_time,
-          'Extra time',
-          '${RideFormat.money(pricing.extraDurationRatePerHour)} / hour',
-        ),
+        if (showRates) ...[
+          const Divider(height: 20),
+          row(
+            Icons.add_road,
+            'Extra distance',
+            '${RideFormat.money(pricing.extraDistanceRatePerKm)} / km',
+          ),
+          row(
+            Icons.more_time,
+            'Extra time',
+            '${RideFormat.money(pricing.extraDurationRatePerHour)} / hour',
+          ),
+        ],
         const SizedBox(height: 6),
         const Text(
           'The included time starts when your driver starts the circuit with '

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/account/presentation/change_password_screen.dart';
+import '../../features/account/presentation/delete_account_screen.dart';
 import '../../features/account/presentation/edit_profile_screen.dart';
 import '../../features/account/presentation/settings_screen.dart';
 import '../../features/auth/domain/app_user.dart';
@@ -143,8 +144,12 @@ String? resolveRedirect(
           allowed = {AppRoutes.driverPendingApproval};
       }
   }
+  // Deleting the account must be reachable in every state (Google Play),
+  // including a driver still being onboarded or reviewed.
   final isAllowed =
       allowed.contains(location) ||
+      (user.role == UserRole.driver &&
+          location == AppRoutes.driverDeleteAccount) ||
       allowedPrefixes.any((prefix) => location.startsWith(prefix));
   return isAllowed ? null : home;
 }
@@ -225,6 +230,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         builder: (context, state) => const ChangePasswordScreen(),
       ),
       GoRoute(
+        path: AppRoutes.customerDeleteAccount,
+        builder: (context, state) => const DeleteAccountScreen(isDriver: false),
+      ),
+      GoRoute(
         path: AppRoutes.customerSavedPlaces,
         builder: (context, state) => const SavedPlacesScreen(),
       ),
@@ -239,6 +248,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppRoutes.driverChangePassword,
         builder: (context, state) => const ChangePasswordScreen(),
+      ),
+      GoRoute(
+        path: AppRoutes.driverDeleteAccount,
+        builder: (context, state) => const DeleteAccountScreen(isDriver: true),
       ),
       GoRoute(
         path: AppRoutes.driverDetails,

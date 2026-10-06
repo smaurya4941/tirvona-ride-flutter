@@ -64,6 +64,7 @@ abstract final class AppRoutes {
   static const customerSettings = '/customer/settings';
   static const customerEditProfile = '/customer/settings/profile';
   static const customerChangePassword = '/customer/settings/password';
+  static const customerDeleteAccount = '/customer/settings/delete-account';
 
   static const driverRegistration = '/driver/registration';
   static const driverVehicle = '/driver/vehicle';
@@ -89,6 +90,7 @@ abstract final class AppRoutes {
   static const driverSettings = '/driver/settings';
   static const driverEditProfile = '/driver/settings/profile';
   static const driverChangePassword = '/driver/settings/password';
+  static const driverDeleteAccount = '/driver/settings/delete-account';
 
   // ── Screens both roles have (Phase 5), under the role's own prefix ──
   static String notificationsFor(bool isDriver) =>
@@ -103,6 +105,8 @@ abstract final class AppRoutes {
       isDriver ? driverEditProfile : customerEditProfile;
   static String changePasswordFor(bool isDriver) =>
       isDriver ? driverChangePassword : customerChangePassword;
+  static String deleteAccountFor(bool isDriver) =>
+      isDriver ? driverDeleteAccount : customerDeleteAccount;
   static String complaintFor(bool isDriver, String id) =>
       isDriver ? driverComplaint(id) : customerComplaint(id);
 

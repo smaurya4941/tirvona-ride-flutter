@@ -47,6 +47,12 @@ class AppConfig {
   // Maps are Google Maps SDK for Android; its key is a build-time Android
   // manifest value (android/secrets.properties), not a Dart define.
 
+  // Public legal pages served by the API; the same URLs go in the Play
+  // Console (privacy policy and account deletion).
+  String get privacyPolicyUrl => '$apiBaseUrl/legal/privacy';
+  String get termsUrl => '$apiBaseUrl/legal/terms';
+  String get deleteAccountUrl => '$apiBaseUrl/legal/delete-account';
+
   bool get isProduction => environment == AppEnvironment.production;
 
   /// The Android emulator reaches the host machine via 10.0.2.2; iOS

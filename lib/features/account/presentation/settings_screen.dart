@@ -4,12 +4,14 @@ import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../app/router/app_routes.dart';
+import '../../../core/config/app_config_provider.dart';
 import '../../../core/network/api_exception.dart';
 import '../../../core/theme/app_colors.dart';
 import '../../auth/domain/app_user.dart';
 import '../../auth/presentation/phone_utils.dart';
 import '../../auth/presentation/session_controller.dart';
 import '../../branding/presentation/brand_logo.dart';
+import '../../legal/legal_links.dart';
 import 'widgets/profile_avatar.dart';
 
 /// Whether the app may use the device location, re-read each time Settings
@@ -104,11 +106,25 @@ class SettingsScreen extends ConsumerWidget {
             child: Column(
               children: [
                 ListTile(
-                  leading: const Icon(Icons.monitor_heart_outlined),
-                  title: const Text('System status'),
-                  trailing: const Icon(Icons.chevron_right),
-                  onTap: () => context.push(AppRoutes.systemStatus),
+                  leading: const Icon(Icons.privacy_tip_outlined),
+                  title: const Text('Privacy policy'),
+                  trailing: const Icon(Icons.open_in_new, size: 20),
+                  onTap: () => openLegalPage(context, ref, LegalPage.privacy),
                 ),
+                ListTile(
+                  leading: const Icon(Icons.description_outlined),
+                  title: const Text('Terms of use'),
+                  trailing: const Icon(Icons.open_in_new, size: 20),
+                  onTap: () => openLegalPage(context, ref, LegalPage.terms),
+                ),
+                // A developer diagnostics page: not shown in the production app.
+                if (!ref.watch(appConfigProvider).isProduction)
+                  ListTile(
+                    leading: const Icon(Icons.monitor_heart_outlined),
+                    title: const Text('System status'),
+                    trailing: const Icon(Icons.chevron_right),
+                    onTap: () => context.push(AppRoutes.systemStatus),
+                  ),
                 ListTile(
                   leading: const Icon(Icons.info_outline),
                   title: const Text('About Tirvona Rides'),
@@ -133,6 +149,13 @@ class SettingsScreen extends ConsumerWidget {
                 ref.read(sessionControllerProvider.notifier).logout(),
             icon: const Icon(Icons.logout),
             label: const Text('Sign out'),
+          ),
+          const SizedBox(height: 8),
+          TextButton.icon(
+            style: TextButton.styleFrom(foregroundColor: AppColors.error),
+            onPressed: () => context.push(AppRoutes.deleteAccountFor(isDriver)),
+            icon: const Icon(Icons.delete_forever_outlined),
+            label: const Text('Delete account'),
           ),
         ],
       ),

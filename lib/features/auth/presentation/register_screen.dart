@@ -8,6 +8,7 @@ import '../../../core/theme/app_colors.dart';
 import '../../../shared/widgets/error_banner.dart';
 import '../../../shared/widgets/loading_filled_button.dart';
 import '../../branding/presentation/brand_logo.dart';
+import '../../legal/legal_links.dart';
 import '../domain/app_user.dart';
 import 'auth_error_messages.dart';
 import 'phone_utils.dart';
@@ -281,6 +282,8 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                     color: AppColors.onSurfaceVariant,
                   ),
                 ),
+                const SizedBox(height: 8),
+                const LegalConsentText(),
               ],
             ),
           ),

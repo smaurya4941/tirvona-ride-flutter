@@ -1,0 +1,7 @@
+# Copy to android/key.properties (git-ignored) after creating the upload
+# keystore (see docs/play-store/README.md). Never commit the keystore or this file.
+# storeFile is relative to the android/ folder (or absolute).
+storeFile=../../_secrets/tirvona-upload-keystore.jks
+storePassword=
+keyAlias=tirvona-upload
+keyPassword=

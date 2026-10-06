@@ -25,6 +25,7 @@ abstract final class ApiEndpoints {
 
   static const usersMe = '/users/me';
   static const usersMePassword = '/users/me/password';
+  static const usersMeDeleteAccount = '/users/me/delete-account';
   static const usersProfileImage = '/users/profile-image';
 
   static const driversMe = '/drivers/me';

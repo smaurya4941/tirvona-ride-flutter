@@ -44,6 +44,12 @@ class _PendingApprovalScreenState extends ConsumerState<PendingApprovalScreen> {
                 ref.read(sessionControllerProvider.notifier).logout(),
             child: const Text('Sign out'),
           ),
+          PopupMenuButton<String>(
+            onSelected: (_) => context.push(AppRoutes.driverDeleteAccount),
+            itemBuilder: (_) => const [
+              PopupMenuItem(value: 'delete', child: Text('Delete account')),
+            ],
+          ),
         ],
       ),
       body: SafeArea(

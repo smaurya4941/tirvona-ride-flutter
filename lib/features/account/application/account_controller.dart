@@ -29,6 +29,12 @@ class AccountController {
     newPassword: newPassword,
   );
 
+  /// Deletes the account on the server, then signs this device out.
+  Future<void> deleteAccount({required String password}) async {
+    await _repository.deleteAccount(password: password);
+    await _ref.read(sessionControllerProvider.notifier).handleAccountDeleted();
+  }
+
   Future<void> uploadProfileImage(String filePath) async {
     _publish(await _repository.uploadProfileImage(filePath));
   }

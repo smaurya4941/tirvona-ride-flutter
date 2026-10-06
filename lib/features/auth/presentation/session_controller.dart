@@ -117,6 +117,11 @@ class SessionController extends Notifier<SessionState> {
 
   Future<void> logout() => _signOutLocally(revokeRefreshToken: true);
 
+  /// The server deleted this account: every session is already revoked, so
+  /// there is nothing to revoke here, only local state to clear.
+  Future<void> handleAccountDeleted() =>
+      _signOutLocally(revokeRefreshToken: false);
+
   Future<void> _signOutLocally({required bool revokeRefreshToken}) async {
     // While still signed in (e.g. stop pushes to this phone). A failing
     // hook must never keep the user signed in.

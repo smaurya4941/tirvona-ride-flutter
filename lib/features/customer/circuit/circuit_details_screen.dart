@@ -8,6 +8,7 @@ import '../../../shared/widgets/load_error_view.dart';
 import '../../circuit/application/circuit_providers.dart';
 import '../../circuit/domain/circuit_models.dart';
 import '../../circuit/presentation/widgets/circuit_widgets.dart';
+import '../../rides/domain/ride_formatters.dart';
 import '../../rides/presentation/widgets/ride_widgets.dart';
 
 /// Everything a customer needs before booking: stops, what the price
@@ -98,15 +99,18 @@ class CircuitDetailsScreen extends ConsumerWidget {
                   child: CircuitStopsTimeline.planned(stops: pkg.stops),
                 ),
                 _Section(
-                  title: 'Price & what\'s included',
-                  child: CircuitFareRules(pricing: pkg.pricing),
+                  title: 'What\'s included',
+                  subtitle: 'The same with every vehicle.',
+                  child: CircuitFareRules(pricing: pkg.pricing, showRates: false),
                 ),
                 _Section(
-                  title: 'Vehicles',
+                  title: 'Vehicles & prices',
+                  subtitle: 'Each vehicle has its own package price and extra rates.',
                   child: Column(
                     children: [
                       for (final vehicle in pkg.vehicles)
                         ListTile(
+                          key: ValueKey('circuit-vehicle-${vehicle.rideType.wireName}'),
                           contentPadding: EdgeInsets.zero,
                           leading: CircleAvatar(
                             backgroundColor: AppColors.bhagwaLight,
@@ -123,7 +127,18 @@ class CircuitDetailsScreen extends ConsumerWidget {
                             style: const TextStyle(fontWeight: FontWeight.w600),
                           ),
                           subtitle: Text(
-                            'Up to ${vehicle.maxPassengers} passenger${vehicle.maxPassengers == 1 ? '' : 's'}',
+                            'Up to ${vehicle.maxPassengers} passenger${vehicle.maxPassengers == 1 ? '' : 's'}\n'
+                            'Extra ${RideFormat.money(vehicle.pricing.extraDistanceRatePerKm)} / km · '
+                            '${RideFormat.money(vehicle.pricing.extraDurationRatePerHour)} / hour',
+                          ),
+                          isThreeLine: true,
+                          trailing: Text(
+                            RideFormat.money(vehicle.pricing.basePrice),
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.bhagwaDark,
+                            ),
                           ),
                         ),
                     ],

@@ -73,6 +73,16 @@ class AccountRepository {
     );
   });
 
+  /// Permanently deletes the account (POST /users/me/delete-account). The
+  /// server answers 409 `ACCOUNT_DELETION_BLOCKED` while a ride, a
+  /// cancellation fee or earnings are unsettled.
+  Future<void> deleteAccount({required String password}) => _guard(() async {
+    await _dio.post<void>(
+      ApiEndpoints.usersMeDeleteAccount,
+      data: {'password': password},
+    );
+  });
+
   /// Uploads [filePath] (already downscaled on the device) as the photo.
   Future<AppUser> uploadProfileImage(String filePath) => _guard(() async {
     final form = FormData.fromMap({

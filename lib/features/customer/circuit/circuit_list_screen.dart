@@ -154,6 +154,13 @@ class CircuitPackageCard extends StatelessWidget {
                   const SizedBox(height: 12),
                   Row(
                     children: [
+                      if (package.hasPriceRange) ...[
+                        const Text(
+                          'from',
+                          style: TextStyle(color: AppColors.onSurfaceVariant),
+                        ),
+                        const SizedBox(width: 6),
+                      ],
                       Text(
                         RideFormat.money(package.pricing.basePrice),
                         style: const TextStyle(

@@ -27,6 +27,19 @@ val mapsApiKey: String = run {
     ).firstOrNull { !it.isNullOrBlank() }?.trim() ?: ""
 }
 
+// ── Release signing (Google Play upload key) ──
+// android/key.properties (git-ignored; see key.properties.example) names the
+// upload keystore. Without it, `bundleRelease` (the Play Store artifact) fails
+// on purpose, and `assembleRelease` / `flutter run --release` fall back to the
+// debug key so a release build can still be tried on a phone — never upload
+// that one: Play rejects debug-signed bundles.
+val keystoreProperties = Properties().apply {
+    val file = rootProject.file("key.properties")
+    if (file.isFile) file.inputStream().use { load(it) }
+}
+val hasUploadKeystore = listOf("storeFile", "storePassword", "keyAlias", "keyPassword")
+    .all { !keystoreProperties.getProperty(it).isNullOrBlank() }
+
 // Debug builds still run without a key (the map renders blank and logcat
 // says "Authorization failure"); release builds must not ship without one.
 gradle.taskGraph.whenReady {
@@ -36,6 +49,16 @@ gradle.taskGraph.whenReady {
             "$mapsApiKeyName is not set. Add it to android/secrets.properties " +
                 "or export it as an environment variable before a release build.",
         )
+    }
+    val buildsBundle = allTasks.any { it.project == project && it.name.startsWith("bundle") && it.name.endsWith("Release") }
+    if (buildsBundle && !hasUploadKeystore) {
+        throw GradleException(
+            "No upload keystore: create android/key.properties (see key.properties.example) " +
+                "before building the Play Store bundle.",
+        )
+    }
+    if (buildsRelease && !hasUploadKeystore) {
+        logger.warn("w: android/key.properties is missing — this release build is signed with the DEBUG key. Do not upload it.")
     }
     if (mapsApiKey.isEmpty()) {
         logger.warn("w: $mapsApiKeyName is not set — Google Maps will not load tiles.")
@@ -69,12 +92,31 @@ android {
         manifestPlaceholders["mapsApiKey"] = mapsApiKey
     }
 
+    signingConfigs {
+        if (hasUploadKeystore) {
+            create("release") {
+                storeFile = rootProject.file(keystoreProperties.getProperty("storeFile"))
+                storePassword = keystoreProperties.getProperty("storePassword")
+                keyAlias = keystoreProperties.getProperty("keyAlias")
+                keyPassword = keystoreProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
-            // Keep rules for the Razorpay checkout SDK.
+            signingConfig = if (hasUploadKeystore) {
+                signingConfigs.getByName("release")
+            } else {
+                signingConfigs.getByName("debug")
+            }
+            // R8 shrinks and obfuscates the Java/Kotlin side, resources are
+            // trimmed; the keep rules below protect the Razorpay checkout.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            // Native debug symbols go into the bundle so Play Console can
+            // symbolicate native crashes and ANRs.
+            ndk { debugSymbolLevel = "SYMBOL_TABLE" }
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",

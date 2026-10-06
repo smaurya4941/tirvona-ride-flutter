@@ -439,13 +439,26 @@ class _VehicleTile extends StatelessWidget {
                         style: const TextStyle(fontWeight: FontWeight.w700),
                       ),
                       Text(
-                        'Up to ${vehicle.maxPassengers} passengers',
+                        'Up to ${vehicle.maxPassengers} passenger${vehicle.maxPassengers == 1 ? '' : 's'} · '
+                        'extra ${RideFormat.money(vehicle.pricing.extraDistanceRatePerKm)}/km',
                         style: const TextStyle(
                           fontSize: 12,
                           color: AppColors.onSurfaceVariant,
                         ),
                       ),
                     ],
+                  ),
+                ),
+                // Each vehicle has its own package price.
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Text(
+                    RideFormat.money(vehicle.pricing.basePrice),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: AppColors.midnightBlue,
+                    ),
                   ),
                 ),
                 Icon(

@@ -24,6 +24,9 @@ Build-time settings (`--dart-define`):
 
 Debug builds allow plain HTTP for local development; release builds are HTTPS-only.
 
+Publishing to Google Play (signing, build command, Console forms, fingerprints):
+see [docs/play-store/README.md](docs/play-store/README.md).
+
 ## Structure
 
 ```
