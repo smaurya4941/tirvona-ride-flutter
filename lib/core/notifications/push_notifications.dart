@@ -339,9 +339,9 @@ class PushNotificationsController {
           icon: 'ic_stat_tirvona',
           color: sos ? const Color(0xFFB91C1C) : const Color(0xFF0F172A),
           ticker: notification.title,
-          playSound: true,
+          playSound: !alert.isSilent,
           sound: alert.androidSound,
-          enableVibration: true,
+          enableVibration: !alert.isSilent,
           styleInformation: notification.body != null
               ? BigTextStyleInformation(
                   notification.body!,
@@ -354,8 +354,8 @@ class PushNotificationsController {
           android: androidDetails,
           iOS: DarwinNotificationDetails(
             presentAlert: false, // the in-app banner already shows it
-            presentSound: true,
-            sound: '${alert.sound}.wav',
+            presentSound: !alert.isSilent,
+            sound: alert.isSilent ? null : '${alert.sound}.wav',
           ),
         );
         await _localNotifications.show(

@@ -77,6 +77,7 @@ class AppNotification {
       color: AppColors.success,
     ),
     'RIDE_STARTED' => (icon: Icons.route, color: AppColors.midnightBlue),
+    'RIDE_END_OTP' => (icon: Icons.pin, color: AppColors.success),
     'RIDE_COMPLETED' => (icon: Icons.flag, color: AppColors.success),
     'RIDE_CANCELLED' || 'RIDE_NO_DRIVER' => (
       icon: Icons.cancel_outlined,

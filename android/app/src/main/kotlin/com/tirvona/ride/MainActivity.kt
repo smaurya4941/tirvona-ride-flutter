@@ -55,11 +55,22 @@ class MainActivity : FlutterActivity() {
             }
             manager.createNotificationChannel(channel)
         }
+
+        // The notice to the person who pressed SOS: still shown (heads-up) but
+        // with no sound and no vibration, so the other person in the vehicle
+        // is not alerted.
+        val silent = NotificationChannel(SOS_SILENT_CHANNEL_ID, "Your SOS alert", NotificationManager.IMPORTANCE_HIGH).apply {
+            description = "Silent confirmation of an SOS you raised"
+            enableVibration(false)
+            setSound(null, null)
+        }
+        manager.createNotificationChannel(silent)
     }
 
     private companion object {
         const val RIDE_UPDATES_CHANNEL_ID = "tirvona_rides_v3"
         const val RIDE_REQUESTS_CHANNEL_ID = "tirvona_ride_requests_v2"
         const val SOS_CHANNEL_ID = "tirvona_sos_v2"
+        const val SOS_SILENT_CHANNEL_ID = "tirvona_sos_silent_v1"
     }
 }

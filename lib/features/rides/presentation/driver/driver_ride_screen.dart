@@ -13,6 +13,7 @@ import '../../../../shared/widgets/load_error_view.dart';
 import '../../../../shared/widgets/loading_filled_button.dart';
 import '../../../circuit/presentation/widgets/circuit_widgets.dart';
 import '../../../driver/circuit/driver_circuit_panel.dart';
+import '../../../safety/repository/safety_repository.dart';
 import '../../../safety/widgets/sos_button.dart';
 import '../../application/ride_providers.dart';
 import '../../data/ride_repository.dart';
@@ -22,6 +23,7 @@ import '../widgets/call_button.dart';
 import '../widgets/cancel_ride_sheet.dart';
 import '../widgets/ride_map.dart';
 import '../widgets/ride_widgets.dart';
+import 'end_ride_widgets.dart';
 import 'ride_request_card.dart';
 
 /// The driver's side of one ride. Each button asks the server to move the
@@ -139,13 +141,17 @@ class _DriverRideBodyState extends ConsumerState<_DriverRideBody> {
     }
   }
 
-  Future<void> _complete() async {
+  /// Step 1 of ending the trip: freezes the fare and shows the rider their
+  /// end-of-trip code. The ride stays in progress until the code is entered.
+  Future<void> _requestEnd() async {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Complete this ride?'),
+        title: const Text('End this ride?'),
         content: Text(
-          'Confirm the customer has reached ${widget.ride.destination.title}.',
+          'Confirm the customer has reached ${widget.ride.destination.title}. '
+          'The fare is calculated up to now, and the customer gets a 4-digit '
+          'code to read out to you.',
         ),
         actions: [
           TextButton(
@@ -154,13 +160,37 @@ class _DriverRideBodyState extends ConsumerState<_DriverRideBody> {
           ),
           FilledButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Complete'),
+            child: const Text('End ride'),
           ),
         ],
       ),
     );
-    if (confirmed == true) await _run((repo) => repo.complete(widget.ride.id));
+    if (confirmed == true) {
+      await _run((repo) => repo.requestEnd(widget.ride.id));
+    }
   }
+
+  /// Step 2: the code the rider reads out completes the ride.
+  Future<void> _submitEndCode() async {
+    await _run((repo) async {
+      await repo.complete(widget.ride.id, otp: _otpController.text);
+      _otpController.clear();
+    });
+    // A wrong or expired code is typed again from scratch.
+    if (mounted && _error != null) setState(_otpController.clear);
+  }
+
+  Future<void> _continueTrip() async {
+    await _run((repo) async {
+      await repo.cancelEnd(widget.ride.id);
+      _otpController.clear();
+    });
+  }
+
+  Future<void> _endWithoutCode(String reason) => _run((repo) async {
+    await repo.completeWithoutOtp(widget.ride.id, reason: reason);
+    _otpController.clear();
+  });
 
   Future<void> _cancel() async {
     final cancelled = await showCancelRideSheet(
@@ -199,6 +229,12 @@ class _DriverRideBodyState extends ConsumerState<_DriverRideBody> {
         Icons.pin,
         'Ask for the OTP',
         'The customer sees a 4-digit code in their app. Enter it to start.',
+      ),
+      RideStatus.rideStarted when ride.endRequested => (
+        Icons.pin,
+        'Ask for the end code',
+        'The customer sees a 4-digit code in their app. Enter it to complete '
+            'the ride.',
       ),
       RideStatus.rideStarted => (
         Icons.route,
@@ -387,28 +423,9 @@ class _DriverRideBodyState extends ConsumerState<_DriverRideBody> {
         ];
       case RideStatus.driverArrived:
         return [
-          TextField(
+          _OtpInput(
             controller: _otpController,
-            keyboardType: TextInputType.number,
-            textAlign: TextAlign.center,
-            maxLength: 4,
-            autofocus: true,
-            inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            style: const TextStyle(
-              fontSize: 32,
-              fontWeight: FontWeight.w800,
-              letterSpacing: 16,
-            ),
-            decoration: InputDecoration(
-              hintText: '• • • •',
-              counterText: '',
-              filled: true,
-              fillColor: Colors.white,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-            ),
-            onChanged: (_) => setState(() {}),
+            onChanged: () => setState(() {}),
           ),
           const SizedBox(height: 12),
           LoadingFilledButton(
@@ -426,12 +443,49 @@ class _DriverRideBodyState extends ConsumerState<_DriverRideBody> {
           cancelButton,
         ];
       case RideStatus.rideStarted:
+        if (ride.endRequested) {
+          final endOtp = ride.endOtp;
+          final sosOpen =
+              ref
+                  .watch(rideSosProvider(ride.id))
+                  .value
+                  ?.any((alert) => alert.status.isOpen) ??
+              false;
+          return [
+            _OtpInput(
+              controller: _otpController,
+              onChanged: () => setState(() {}),
+            ),
+            const SizedBox(height: 12),
+            LoadingFilledButton(
+              label: 'Complete ride',
+              icon: Icons.flag,
+              isLoading: _working,
+              onPressed: _otpController.text.length == 4
+                  ? _submitEndCode
+                  : null,
+            ),
+            const SizedBox(height: 12),
+            if (endOtp != null)
+              RiderNotRespondingCard(
+                endOtp: endOtp,
+                busy: _working,
+                sosOpen: sosOpen,
+                onEndWithoutCode: _endWithoutCode,
+              ),
+            const SizedBox(height: 4),
+            TextButton(
+              onPressed: _working ? null : _continueTrip,
+              child: const Text('Continue trip'),
+            ),
+          ];
+        }
         return [
           LoadingFilledButton(
-            label: 'Complete ride',
+            label: 'End ride',
             icon: Icons.flag,
             isLoading: _working,
-            onPressed: _complete,
+            onPressed: _requestEnd,
           ),
         ];
       case RideStatus.completed ||
@@ -455,6 +509,39 @@ class _DriverRideBodyState extends ConsumerState<_DriverRideBody> {
             ),
         ];
     }
+  }
+}
+
+/// The 4-digit box for a code the rider reads out (start or end of the trip).
+class _OtpInput extends StatelessWidget {
+  const _OtpInput({required this.controller, required this.onChanged});
+
+  final TextEditingController controller;
+  final VoidCallback onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    return TextField(
+      controller: controller,
+      keyboardType: TextInputType.number,
+      textAlign: TextAlign.center,
+      maxLength: 4,
+      autofocus: true,
+      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+      style: const TextStyle(
+        fontSize: 32,
+        fontWeight: FontWeight.w800,
+        letterSpacing: 16,
+      ),
+      decoration: InputDecoration(
+        hintText: '• • • •',
+        counterText: '',
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+      ),
+      onChanged: (_) => onChanged(),
+    );
   }
 }
 

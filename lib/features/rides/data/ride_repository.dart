@@ -238,7 +238,23 @@ class RideRepository {
   Future<Ride> start(String id, {required String otp}) =>
       _action(id, 'start', {'otp': otp});
 
-  Future<Ride> complete(String id) => _action(id, 'complete');
+  /// Asks to end the trip: the fare is frozen to now and the rider's app
+  /// shows the end-of-trip code. The ride stays "in progress" until
+  /// [complete] is called with that code.
+  Future<Ride> requestEnd(String id) => _action(id, 'request-end');
+
+  /// Takes the end request back; the trip continues.
+  Future<Ride> cancelEnd(String id) => _action(id, 'cancel-end');
+
+  /// Completes the trip with the rider's end-of-trip [otp].
+  Future<Ride> complete(String id, {required String otp}) =>
+      _action(id, 'complete', {'otp': otp});
+
+  /// "Rider not responding": allowed by the server only after the wait that
+  /// [RideEndOtp.overrideAvailableAt] shows (or while an SOS is open). The
+  /// trip is flagged for review with [reason].
+  Future<Ride> completeWithoutOtp(String id, {required String reason}) =>
+      _action(id, 'complete-without-otp', {'reason': reason});
 
   Future<DriverDashboard> dashboard() => _guard(() async {
     final response = await _dio.get<Map<String, dynamic>>(

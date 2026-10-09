@@ -27,6 +27,15 @@ enum AlertSound {
     channelId: 'tirvona_sos_v2',
     channelName: 'Safety alerts',
     channelDescription: 'SOS and safety alerts',
+  ),
+
+  /// The notice to the person who pressed SOS: no sound and no vibration, so
+  /// nobody else in the vehicle can tell an alert was raised.
+  silent(
+    sound: 'silent',
+    channelId: 'tirvona_sos_silent_v1',
+    channelName: 'Your SOS alert',
+    channelDescription: 'Silent confirmation of an SOS you raised',
   );
 
   const AlertSound({
@@ -41,16 +50,18 @@ enum AlertSound {
   final String channelName;
   final String channelDescription;
 
-  RawResourceAndroidNotificationSound get androidSound =>
-      RawResourceAndroidNotificationSound(sound);
+  bool get isSilent => this == AlertSound.silent;
+
+  RawResourceAndroidNotificationSound? get androidSound =>
+      isSilent ? null : RawResourceAndroidNotificationSound(sound);
 
   AndroidNotificationChannel get channel => AndroidNotificationChannel(
     channelId,
     channelName,
     description: channelDescription,
     importance: Importance.max,
-    enableVibration: true,
-    playSound: true,
+    enableVibration: !isSilent,
+    playSound: !isSilent,
     sound: androidSound,
   );
 

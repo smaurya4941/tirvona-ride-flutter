@@ -39,10 +39,11 @@ Package: `com.tirvona.ride` · one app for riders and drivers · version in
    the SOS templates (`tirvona_sos_alert`, optional `tirvona_sos_update`).
 6. `npm run seed:admin`, deploy the admin panel (`Tirvona_ride_admin`) with
    `VITE_API_URL` set to the API origin (and `VITE_GOOGLE_MAPS_API_KEY` for the live map).
-7. **Driver documents are stored on the server's disk** (`uploads/` next to the
-   API's working directory). Mount a **persistent volume** there and back it up;
-   on a host with an ephemeral filesystem (Render free, plain containers) every
-   redeploy would delete every driver's licence and RC.
+7. **Driver documents and profile photos are stored in MongoDB GridFS** (same Atlas
+   cluster), so no disk or volume is needed. Make sure Atlas Network Access allows
+   your host and the cluster is a paid tier before real traffic (see
+   `Tirvona_ride/docs/storage/README.md`). Run `npm run storage:migrate` once
+   if old documents exist.
 8. Open `https://<api>/api/v1/legal/privacy` in a browser: it must load and show
    your support email. **Have the policy and terms text reviewed** (they are drafts).
 9. Put the same API origin in `env/prod.json` → `API_BASE_URL`.

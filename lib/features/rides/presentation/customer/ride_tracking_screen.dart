@@ -498,6 +498,13 @@ class _StatusHero extends StatelessWidget {
         'Your driver has arrived',
         'Share the OTP below with your driver to start the ride.',
       ),
+      RideStatus.rideStarted when ride.otp?.isEnd ?? false => (
+        Icons.pin,
+        AppColors.success,
+        'Your driver is ending the trip',
+        'If you have reached ${ride.destination.title}, read the OTP below '
+            'to your driver to complete the ride.',
+      ),
       RideStatus.rideStarted => (
         Icons.route,
         AppColors.bhagwa,
@@ -608,7 +615,7 @@ class _OtpCard extends StatelessWidget {
         child: Column(
           children: [
             Text(
-              'Your ride OTP',
+              otp.isEnd ? 'Your end-of-trip OTP' : 'Your ride OTP',
               style: TextStyle(color: Colors.white.withValues(alpha: 0.8)),
             ),
             const SizedBox(height: 10),
@@ -638,7 +645,9 @@ class _OtpCard extends StatelessWidget {
             ),
             const SizedBox(height: 10),
             Text(
-              'Only share this with your driver, in person.',
+              otp.isEnd
+                  ? 'Share this only once you have reached your destination.'
+                  : 'Only share this with your driver, in person.',
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.8),
                 fontSize: 12,

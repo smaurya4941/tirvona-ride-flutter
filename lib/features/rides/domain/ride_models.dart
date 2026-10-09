@@ -589,16 +589,60 @@ class RideCustomerInfo {
   final String? phone;
 }
 
+/// Which code the customer is reading out: the one that starts the ride, or
+/// the one that ends it.
+enum RideOtpPurpose {
+  start,
+  end;
+
+  static RideOtpPurpose fromWire(String? value) =>
+      value == 'END' ? RideOtpPurpose.end : RideOtpPurpose.start;
+}
+
 class RideOtp {
-  const RideOtp({required this.code, this.expiresAt});
+  const RideOtp({
+    required this.code,
+    this.expiresAt,
+    this.purpose = RideOtpPurpose.start,
+  });
 
   factory RideOtp.fromJson(Map<String, dynamic> json) => RideOtp(
     code: json['code'] as String,
     expiresAt: _date(json['expiresAt']),
+    purpose: RideOtpPurpose.fromWire(json['purpose'] as String?),
   );
 
   final String code;
   final DateTime? expiresAt;
+  final RideOtpPurpose purpose;
+
+  bool get isEnd => purpose == RideOtpPurpose.end;
+}
+
+/// The driver's side of the end-of-trip code: that the driver asked to end
+/// the trip, and from when "rider not responding" is allowed. Never the code.
+class RideEndOtp {
+  const RideEndOtp({
+    required this.requestedAt,
+    required this.overrideAvailableAt,
+    this.expiresAt,
+  });
+
+  factory RideEndOtp.fromJson(Map<String, dynamic> json) => RideEndOtp(
+    requestedAt: _date(json['requestedAt']) ?? DateTime.now(),
+    overrideAvailableAt: _date(json['overrideAvailableAt']) ?? DateTime.now(),
+    expiresAt: _date(json['expiresAt']),
+  );
+
+  final DateTime requestedAt;
+  final DateTime overrideAvailableAt;
+  final DateTime? expiresAt;
+
+  /// Time left before the driver may end the trip without the rider's code.
+  Duration overrideIn([DateTime? now]) {
+    final left = overrideAvailableAt.difference(now ?? DateTime.now());
+    return left.isNegative ? Duration.zero : left;
+  }
 }
 
 class RideCancellation {
@@ -687,6 +731,9 @@ class Ride {
     this.cancellation,
     this.driver,
     this.otp,
+    this.endOtp,
+    this.endRequestedAt,
+    this.completionMode,
     this.customer,
     this.assignmentExpiresAt,
     this.pickupDistanceMeters,
@@ -727,6 +774,11 @@ class Ride {
     otp: _map(json['otp']) == null
         ? null
         : RideOtp.fromJson(_map(json['otp'])!),
+    endOtp: _map(json['endOtp']) == null
+        ? null
+        : RideEndOtp.fromJson(_map(json['endOtp'])!),
+    endRequestedAt: _date(json['endRequestedAt']),
+    completionMode: json['completionMode'] as String?,
     customer: _map(json['customer']) == null
         ? null
         : RideCustomerInfo.fromJson(_map(json['customer'])!),
@@ -771,9 +823,23 @@ class Ride {
   final RideCancellation? cancellation;
   final RideDriverInfo? driver;
   final RideOtp? otp;
+
+  /// Driver view, while the driver has asked to end the trip and it is not
+  /// completed yet.
+  final RideEndOtp? endOtp;
+
+  /// The driver asked to end the trip; the fare is priced to this moment.
+  final DateTime? endRequestedAt;
+
+  /// How the trip ended: OTP | DRIVER_OVERRIDE | ADMIN | SOS | NOT_REQUIRED.
+  final String? completionMode;
   final RideCustomerInfo? customer;
   final DateTime? assignmentExpiresAt;
   final int? pickupDistanceMeters;
+
+  /// The driver asked to end the trip and is waiting for the rider's code.
+  bool get endRequested =>
+      status == RideStatus.rideStarted && endRequestedAt != null;
 
   /// Money state (Phase 4); only meaningful once [status] is completed.
   final RidePaymentStatus paymentStatus;

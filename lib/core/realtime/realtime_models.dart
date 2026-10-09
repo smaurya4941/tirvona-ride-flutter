@@ -25,6 +25,10 @@ abstract final class RealtimeEvents {
   static const driverArriving = 'ride.driver_arriving';
   static const driverArrived = 'ride.driver_arrived';
   static const otpRefreshed = 'ride.otp_refreshed';
+
+  /// The driver asked to end the trip / took the request back.
+  static const endRequested = 'ride.end_requested';
+  static const endCancelled = 'ride.end_cancelled';
   static const started = 'ride.started';
   static const locationUpdated = 'ride.location_updated';
   static const completed = 'ride.completed';
